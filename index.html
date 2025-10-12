@@ -1,0 +1,679 @@
+<!-- EFTRACKER — sidebar symmetry, legal text under menu, mobile burger, task caching -->
+<div id="eft-app"></div>
+
+<style>
+  html, body { background:#0a0c0e !important; }
+  #eft-bg-grid, #eft-bg-noise { position:fixed; inset:0; pointer-events:none; z-index:0; }
+  #page-container, #et-boc, body > *:not(#eft-bg-grid):not(#eft-bg-noise){ position:relative; z-index:1; isolation:isolate; }
+
+  :root{
+    --mainW: 1100px; --gap: 24px; /* global spacing */
+    --panel:#121416; --soft:#0e1012; --line:#252a2f;
+    --gold:#d6b986; --gold-2:#a7895f; --text:#d0d6dc; --muted:#8f98a2;
+    --danger:#d85e5e; --danger-2:#8f2f2f;
+    --r:14px; --rsm:10px; --shadow:0 10px 40px rgba(0,0,0,.55);
+  }
+  @media (max-width:1600px){ :root{ --mainW:1000px; --gap:20px; } }
+  @media (max-width:1400px){ :root{ --mainW:92vw;  --gap:16px; } }
+  @media (max-width:980px ){ :root{ --mainW:94vw;  --gap:14px; } }
+
+  /* Subtle grid + mild warble */
+  #eft-bg-grid{
+    --gx: 0px; --gy: 0px;
+    background:
+      radial-gradient(140% 100% at 50% -10%, rgba(0,0,0,.35), transparent 60%),
+      radial-gradient(120% 80% at 85% -10%, rgba(214,185,134,.14), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(214,185,134,.06) 0 1px, transparent 1px 80px),
+      repeating-linear-gradient(0deg,  rgba(214,185,134,.06) 0 1px, transparent 1px 80px),
+      linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 2px);
+    background-position: 0 0, 0 0, var(--gx) 0, 0 var(--gy), 0 0;
+    animation: gridWobble 7s ease-in-out infinite, scanDrift 18s linear infinite;
+  }
+  @keyframes gridWobble{ 0%{--gx:0;--gy:0} 35%{--gx:1.2px;--gy:.8px} 55%{--gx:1.6px;--gy:1.2px} 85%{--gx:.9px;--gy:.5px} 100%{--gx:0;--gy:0} }
+  @keyframes scanDrift{ 0%{background-position:0 0,0 0,var(--gx) 0,0 var(--gy),0 0} 100%{background-position:0 3px,0 0,var(--gx) 0,0 var(--gy),0 0} }
+
+  :focus-visible { outline: 2px solid #d6b986; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #eft-bg-grid{animation:none} #eft-bg-noise{display:none} }
+
+  #eft-wrap{ width:var(--mainW); margin:0 auto; padding:28px 0; }
+
+  /* Desktop sidebar (left), symmetric spacing enforced by JS */
+  #eft-side{ position:fixed; left:var(--gap); top:0; z-index:5; }
+  #eft-side .bubble{ background:linear-gradient(#101214, #0b0d0f); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:12px; }
+  #eft-side .title{ color:#66707a; font:700 11px "Courier New", Courier, ui-monospace; letter-spacing:.18em; text-transform:uppercase; padding:4px 8px 8px; }
+  #eft-side .snav{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  #eft-side .slink{ display:flex; align-items:center; justify-content:center; padding:10px 12px; border:1px solid var(--line); border-radius:999px; background:var(--soft); color:var(--text); text-decoration:none; font:700 12px "Courier New", Courier, ui-monospace; letter-spacing:.12em; text-transform:uppercase; }
+  #eft-side .slink:hover{ border-color:var(--gold-2); color:var(--gold); box-shadow:inset 0 0 0 1px rgba(214,185,134,.15); }
+
+  /* Legal text block under menu */
+  .legal-text{ margin:10px 8px 4px; color:var(--muted); font:600 10.5px "Courier New", Courier, ui-monospace; letter-spacing:.12em; text-transform:uppercase; opacity:.9; }
+  .legal-text a{ color:inherit; text-decoration:none; border-bottom:1px dotted transparent; }
+  .legal-text a:hover{ color:var(--gold); border-bottom-color:var(--gold-2); }
+
+  /* Mobile burger */
+  #eft-burger{ display:none; position:fixed; left:var(--gap); top:12px; z-index:7;
+    width:42px; height:42px; border-radius:999px; border:1px solid var(--line);
+    background:var(--soft); color:var(--text); font-size:20px; line-height:40px; text-align:center; }
+  #eft-burger:focus-visible{ outline:2px solid var(--gold); }
+
+  #eft-offcanvas{ display:none; position:fixed; inset:0; z-index:8; background:rgba(0,0,0,.5); }
+  #eft-offcanvas[aria-hidden="false"]{ display:block; }
+  #eft-offcanvas .panel{ position:absolute; left:0; top:0; bottom:0; width:min(84vw,360px); background:#0c0f11; border-right:1px solid var(--line); padding:16px; box-shadow:var(--shadow); overflow:auto; }
+  #eft-offcanvas .panel .bubble{ background:none; border:none; box-shadow:none; padding:0; }
+  #eft-offcanvas .close{ position:absolute; right:10px; top:10px; border:1px solid var(--line); background:var(--soft); color:var(--text); border-radius:8px; padding:6px 10px; }
+
+  @media (max-width:1400px){
+    #eft-side{ display:none; }
+    #eft-burger{ display:block; }
+  }
+
+  /* Core UI */
+  #eft-cw, #eft-cw * { box-sizing:border-box; }
+  #eft-cw{ color:var(--text); font:14px/1.5 "Courier New", Courier, ui-monospace, Menlo, Consolas, monospace; letter-spacing:.02em; }
+
+  .hero{ background:linear-gradient(#0f1113,#0b0d0f); border:1px solid var(--line); border-radius:var(--r); padding:22px 26px; margin:0 0 16px; text-align:center; box-shadow:var(--shadow); }
+  .hero h1{ margin:0 0 6px; color:var(--gold); font-size:22px; font-weight:700; letter-spacing:.28em; text-transform:uppercase; text-shadow:0 0 6px rgba(214,185,134,.12); }
+  .hero .sub{ color:var(--gold-2); letter-spacing:.22em; font-size:11px; text-transform:uppercase; }
+
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 16px; }
+  .stat{ background:var(--panel); border:1px solid var(--line); border-radius:var(--rsm); padding:12px 14px; text-align:center; }
+  .stat .num{ color:var(--gold); font-size:20px; font-weight:800; letter-spacing:.04em; }
+  .stat .lbl{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.18em; margin-top:2px; }
+  @media (max-width:560px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+
+  .bar{
+    position: sticky; top: 12px; z-index: 6;
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--rsm);
+    padding:10px; margin:0 0 18px; flex-wrap:nowrap; overflow-x:auto; backdrop-filter: blur(2px);
+  }
+  .bar label{ color:var(--muted); font-size:12px; white-space:nowrap; }
+  select, input[type="checkbox"]{ accent-color:var(--gold-2); }
+  select{ background:var(--soft); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; outline:none; min-width:180px; }
+  .btn{ background:var(--soft); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .btn:hover{ border-color:var(--gold-2); color:var(--gold); }
+
+  .search{ flex:0 1 220px; display:flex; gap:8px; align-items:center; min-width:160px; }
+  .search input{ width:100%; background:#0c0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; outline:none; }
+  .search .clear{ white-space:nowrap; }
+
+  @media (max-width:980px){
+    .bar{ flex-wrap:wrap; overflow-x:visible; }
+    .search{ flex:1 1 100%; }
+    .btn, select{ width:100%; }
+  }
+
+  .columns{ display:flex; gap:16px; align-items:flex-start; }
+  .col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:16px; }
+  @media (max-width:980px){ .columns{ display:block; } .col{ width:100%; } }
+
+  .section{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r); display:flex; flex-direction:column; min-width:0; height:clamp(420px, 62vh, 640px); }
+  @media (max-width:980px){ .section{ height:clamp(380px, 58vh, 560px); } }
+  @media (max-width:560px){ .section{ height:clamp(340px, 56vh, 520px); } }
+  .section.is-collapsed{ height:auto; }
+  .sec-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .sec-left{ display:flex; align-items:center; gap:10px; }
+  .toggle{ width:34px; height:34px; display:grid; place-items:center; background:var(--soft); border:1px solid var(--line); border-radius:8px; color:var(--gold); font-weight:800; cursor:pointer; }
+  .toggle:hover{ border-color:var(--gold-2); box-shadow:inset 0 0 0 1px rgba(214,185,134,.15); }
+  .sec-title{ color:var(--gold); letter-spacing:.18em; text-transform:uppercase; font-size:13px; font-weight:700; }
+  .sec-count{ color:var(--muted); font-size:12px; }
+
+  .task-wrap{ padding:10px 12px; overflow:auto; flex:1; }
+  .section.is-collapsed .task-wrap{ display:none; }
+  .section.is-collapsed .sec-head{ border-bottom:none; }
+
+  .task{ border:1px solid var(--line); background:var(--soft); border-radius:10px; padding:12px; margin-bottom:10px; }
+  .task-row{ display:flex; gap:10px; align-items:flex-start; min-width:0; }
+  .task input[type="checkbox"]{ width:20px; height:20px; margin-top:2px; }
+  .t-name{ color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .t-obj{ color:var(--muted); font-size:12px; margin-top:3px; overflow-wrap:anywhere; }
+  .task.done .t-name{ text-decoration:line-through; color:#6b7280; }
+  .task.done{ opacity:.85; }
+
+  .t-kappa{ margin-left:auto; font-size:11px; color:var(--gold); border:1px solid var(--gold-2); padding:2px 8px; border-radius:8px; letter-spacing:.14em; text-transform:uppercase; background:rgba(214,185,134,.08); }
+  .badge-defunct{ margin-left:8px; font-size:11px; color:#fff; border:1px solid var(--danger-2); padding:2px 8px; border-radius:8px; letter-spacing:.14em; text-transform:uppercase; background:var(--danger); position:relative; cursor:help; }
+  .badge-defunct::after{ content:attr(data-tip); position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 8px); background:#0c0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; white-space:nowrap; font-size:12px; opacity:0; pointer-events:none; box-shadow:var(--shadow); transition:opacity .15s; }
+  .badge-defunct::before{ content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:100%; border:6px solid transparent; border-top-color:#0c0f11; margin-bottom:2px; opacity:0; transition:opacity .15s; }
+  .badge-defunct:hover::after, .badge-defunct:hover::before{ opacity:1; }
+
+  .task.defunct{ border-color:var(--danger-2); background:#151012; }
+  .task.defunct .t-name{ color:#e7bcbc; text-decoration:line-through; text-decoration-thickness:1px; }
+
+  .t-tools{ display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .mini-btn{ background:var(--soft); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font-size:13px; cursor:pointer; text-decoration:none; }
+  .mini-btn:hover{ border-color:var(--gold-2); color:var(--gold); }
+  .details{ margin-top:8px; padding:8px; border:1px dashed var(--line); border-radius:8px; background:#0c0f11; }
+
+  .task-wrap::-webkit-scrollbar{ width:10px; }
+  .task-wrap::-webkit-scrollbar-thumb{ background:#1e2327; border:2px solid #0f1214; border-radius:8px; }
+
+  #eft-confetti{ position:fixed; inset:0; pointer-events:none; z-index:9999; }
+
+  .skeleton { position:relative; overflow:hidden; background:#111416; border:1px solid #1f252a; border-radius:10px; height:56px; }
+  .skeleton::after{ content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent); transform:translateX(-100%); animation:sheen 1.2s infinite; }
+  @keyframes sheen{ 100% { transform:translateX(100%); } }
+
+  .err { background:#2a1111; border:1px solid #6b1b1b; color:#f5c7c7; border-radius:10px; padding:10px 12px; margin:10px 0; }
+
+  #eft-toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0e1012; border:1px solid var(--line); color:#d0d6dc; border-radius:10px; padding:10px 12px; display:none; gap:10px; align-items:center; z-index:9999; box-shadow:0 8px 30px rgba(0,0,0,.5); }
+  #eft-toast.show { display:flex; }
+  .toast-actions .btn { padding:8px 10px; }
+  mark.eft-hit { background: rgba(214,185,134,.25); color: inherit; padding: 0 2px; border-radius: 2px; }
+</style>
+
+<script data-cfasync="false">
+(function(){
+  document.title = "EFTRACKER";
+
+  /* Background layers */
+  if (!document.getElementById("eft-bg-grid")){
+    const g = document.createElement("div"); g.id = "eft-bg-grid"; document.body.appendChild(g);
+  }
+  if (!document.getElementById("eft-bg-noise")){
+    const c = document.createElement('canvas'); c.id='eft-bg-noise'; document.body.appendChild(c);
+    const x = c.getContext('2d', {alpha:true});
+    const DPR = Math.min(2, window.devicePixelRatio||1);
+    function size(){ c.width=innerWidth*DPR; c.height=innerHeight*DPR; }
+    size(); addEventListener('resize', size, {passive:true});
+    let interval = matchMedia('(max-width: 600px)').matches ? 120 : 90;
+    function frame(){ const w=c.width,h=c.height,img=x.createImageData(w,h),d=img.data;
+      for (let i=0;i<w*h;i+=8){ const v=(Math.random()*255)|0; const o=i*4; d[o]=v; d[o+1]=v; d[o+2]=v; d[o+3]=12; }
+      x.putImageData(img,0,0);
+    }
+    let tid=setInterval(frame,interval);
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearInterval(tid); else tid=setInterval(frame,interval); });
+  }
+
+  const ENDPOINT = "https://api.tarkov.dev/graphql";
+  const EXT_QUERY = `query Tasks { tasks {
+      id name kappaRequired wikiLink trader { id name }
+      minPlayerLevel taskRequirements { task { id name trader { name } } status }
+      objectives { id description }
+  } }`;
+  const BASIC_QUERY = `query Tasks { tasks { id name kappaRequired wikiLink trader { id name } objectives { id description } } }`;
+
+  const ORDER_ROWS = [
+    ["Prapor","Therapist"],
+    ["Fence","Skier"],
+    ["Peacekeeper","Mechanic"],
+    ["Ragman","Jaeger"],
+    ["Ref","Lightkeeper"],
+    ["BTR Driver",null]
+  ];
+  const DEFUNCT_EXACT = new Set([]); // add exact retired quest names if needed
+
+  /* Cache helpers (task list) */
+  const CACHE_KEY='eft_tasks_cache_v1';
+  const CACHE_TTL=12*60*60*1000; // 12h
+  const getCache=()=>{ try{ const v=JSON.parse(localStorage.getItem(CACHE_KEY)||''); if(v && Date.now()-v.ts<CACHE_TTL) return v.data; }catch{} return null; };
+  const setCache=(data)=>{ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data})); }catch{} };
+
+  const mount = document.getElementById("eft-app");
+  mount.innerHTML = `
+    <div id="eft-wrap">
+      <!-- Desktop sidebar -->
+      <aside id="eft-side" aria-label="Site">
+        <nav class="bubble">
+          <div class="title">Menu</div>
+          <ul class="snav primary">
+            <li><a class="slink" href="/sign-in">Sign in</a></li>
+            <li><a class="slink" href="/updates">Updates</a></li>
+            <li><a class="slink" href="/blog">Blog</a></li>
+          </ul>
+          <div class="legal-text">
+            <a href="/terms">Terms</a> •
+            <a href="/privacy">Privacy</a> •
+            <a href="/dmca">DMCA</a> •
+            <a href="/sources">Data sources</a>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- Mobile burger -->
+      <button id="eft-burger" aria-expanded="false" aria-controls="eft-offcanvas" aria-label="Open menu">☰</button>
+      <div id="eft-offcanvas" aria-hidden="true">
+        <div class="panel" role="dialog" aria-modal="true" id="eft-offcanvas-panel">
+          <button class="close" type="button" id="eft-offcanvas-close">Close</button>
+          <nav class="bubble" aria-label="Mobile site">
+            <div class="title">Menu</div>
+            <ul class="snav primary">
+              <li><a class="slink" href="/sign-in">Sign in</a></li>
+              <li><a class="slink" href="/updates">Updates</a></li>
+              <li><a class="slink" href="/blog">Blog</a></li>
+            </ul>
+            <div class="legal-text" style="margin-top:12px;">
+              <a href="/terms">Terms</a> •
+              <a href="/privacy">Privacy</a> •
+              <a href="/dmca">DMCA</a> •
+              <a href="/sources">Data sources</a>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      <div id="eft-cw"><div class="shell" id="eft-shell"></div></div>
+      <div id="eft-toast"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
+    </div>
+  `;
+
+  const side = document.getElementById("eft-side");
+  const app  = document.getElementById("eft-shell");
+  const toast= document.getElementById("eft-toast");
+
+  /* Mobile nav logic */
+  const burger = document.getElementById('eft-burger');
+  const offc   = document.getElementById('eft-offcanvas');
+  const offClose = document.getElementById('eft-offcanvas-close');
+  function toggleMenu(open){
+    offc.setAttribute('aria-hidden', String(!open));
+    burger.setAttribute('aria-expanded', String(open));
+    if(open){ offClose.focus(); document.body.style.overflow='hidden'; }
+    else{ burger.focus(); document.body.style.overflow=''; }
+  }
+  burger?.addEventListener('click', ()=>toggleMenu(true));
+  offClose?.addEventListener('click', ()=>toggleMenu(false));
+  offc?.addEventListener('click', e=>{ if(e.target===offc) toggleMenu(false); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
+
+  const state = {
+    tasks: [],
+    extended: false,
+    done: JSON.parse(localStorage.getItem("eft-task-progress-stable")||"{}"),
+    traderFilter: "ALL",
+    kappaOnly: false,
+    showCompleted: true,
+    search: "",
+    collapsed: {},
+    openTask: {},
+    colMap: {},
+    scrollByTrader: {},
+    celebrated: JSON.parse(localStorage.getItem("eft-kappa-celebrated")||"false"),
+    loading: true,
+    error: ""
+  };
+
+  try {
+    const ui = JSON.parse(localStorage.getItem("eft-ui")||"{}");
+    state.collapsed = ui.collapsed || {};
+    state.openTask  = ui.openTask  || {};
+  } catch {}
+  const saveProgress=()=>localStorage.setItem("eft-task-progress-stable", JSON.stringify(state.done));
+  const saveUI=()=>localStorage.setItem("eft-ui", JSON.stringify({collapsed: state.collapsed, openTask: state.openTask}));
+
+  const isDefunct = t => DEFUNCT_EXACT.has(t.name);
+
+  function getPrereqIdsSameTrader(task, traderName){
+    const reqs = task.taskRequirements || []; const ids=[];
+    for (const r of reqs){ const rt=r.task; const tn=rt?.trader?.name; if(rt && tn===traderName) ids.push(rt.id); }
+    return ids;
+  }
+  function parsePartIndex(name){
+    const m=name.match(/part\s+(\d+)/i); if(m) return parseInt(m[1],10);
+    const r=name.match(/part\s+([ivxlcdm]+)/i); if(!r) return Number.POSITIVE_INFINITY;
+    const map={i:1,v:5,x:10,l:50,c:100,d:500,m:1000}; let n=0,p=0,s=r[1].toLowerCase();
+    for(let i=s.length-1;i>=0;i--){ const v=map[s[i]]||0; n+= v<p? -v:v; p=v; } return n;
+  }
+  function topoSortByTrader(list, name){
+    const nodes=new Map(); list.forEach(t=>nodes.set(t.id,t));
+    const deg=new Map(), adj=new Map(); list.forEach(t=>{deg.set(t.id,0); adj.set(t.id,[])});
+    list.forEach(t=>{ getPrereqIdsSameTrader(t,name).forEach(pid=>{ if(!nodes.has(pid)) return; adj.get(pid).push(t.id); deg.set(t.id,(deg.get(t.id)||0)+1); }); });
+    const tie=(a,b)=>{ const al=a.minPlayerLevel??0, bl=b.minPlayerLevel??0; if(al!==bl) return al-bl;
+      const ap=parsePartIndex(a.name), bp=parsePartIndex(b.name); if(ap!==bp) return ap-bp; return a.name.localeCompare(b.name); };
+    const q=[]; deg.forEach((d,id)=>{ if(d===0) q.push(id); }); q.sort((a,b)=>tie(nodes.get(a),nodes.get(b)));
+    const out=[]; while(q.length){ const id=q.shift(); out.push(nodes.get(id)); for(const v of adj.get(id)){ deg.set(v,deg.get(v)-1); if(deg.get(v)===0){ q.push(v); q.sort((a,b)=>tie(nodes.get(a),nodes.get(b))); } } }
+    if(out.length!==list.length){ const left=list.filter(t=>!out.includes(t)).sort(tie); return out.concat(left); }
+    return out;
+  }
+  function orderForTrader(list, name){
+    const alive=list.filter(t=>!isDefunct(t)), dead=list.filter(t=>isDefunct(t));
+    const ordered = state.extended ? topoSortByTrader(alive,name)
+      : alive.slice().sort((a,b)=>{ const ap=parsePartIndex(a.name), bp=parsePartIndex(b.name); if(ap!==bp) return ap-bp; return a.name.localeCompare(b.name); });
+    return ordered.concat(dead);
+  }
+  function stats(){
+    const total=state.tasks.length;
+    const done=state.tasks.reduce((n,t)=>n+(state.done[t.id]?1:0),0);
+    const kAll=state.tasks.filter(t=>t.kappaRequired).length;
+    const kDone=state.tasks.filter(t=>t.kappaRequired && state.done[t.id]).length;
+    const pct= total? Math.round((done/total)*100):0;
+    return {total,done,kAll,kDone,pct};
+  }
+
+  function escReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function hi(text, q){
+    if (!q) return text;
+    const r = new RegExp(`(${escReg(q)})`, 'ig');
+    return text.replace(r, '<mark class="eft-hit">$1</mark>');
+  }
+
+  function groups(){
+    const q = state.search.trim().toLowerCase();
+    const map=new Map();
+    for (const t of state.tasks){
+      const trader=t.trader?.name||"Unknown";
+      if(state.traderFilter!=="ALL" && state.traderFilter!==trader) continue;
+      if(state.kappaOnly && !t.kappaRequired) continue;
+      if(!state.showCompleted && state.done[t.id]) continue;
+
+      if(q){
+        let hit = t.name.toLowerCase().includes(q)
+               || (t.trader?.name||"").toLowerCase().includes(q)
+               || (t.objectives||[]).some(o=>o?.description?.toLowerCase().includes(q));
+        if(!hit) continue;
+      }
+      if(!map.has(trader)) map.set(trader,[]);
+      map.get(trader).push(t);
+    }
+    for(const [n,list] of map){ map.set(n, orderForTrader(list,n)); }
+    return map;
+  }
+  function buildColumnOrder(present){
+    const set=new Set(present); const L=[],R=[];
+    for(const [l,r] of ORDER_ROWS){ if(l&&set.has(l)){L.push(l); state.colMap[l]='L';} if(r&&set.has(r)){R.push(r); state.colMap[r]='R';} }
+    for(const n of set){ if(!L.includes(n)&&!R.includes(n)){ (L.length<=R.length?L:R).push(n); } }
+    return {left:L,right:R};
+  }
+  function captureScroll(){
+    app.querySelectorAll('.section .task-wrap').forEach(w=>{
+      const trader=w.closest('.section')?.getAttribute('data-trader'); if(trader) state.scrollByTrader[trader]=w.scrollTop;
+    });
+  }
+  function el(tag, attrs={}, ...kids){
+    const n=document.createElement(tag);
+    for(const [k,v] of Object.entries(attrs)){
+      if(k==="class"){ n.className=v||""; continue; }
+      if(k==="html"){ n.innerHTML=v??""; continue; }
+      if(k.startsWith("on") && typeof v==="function"){ n.addEventListener(k.slice(2),v); continue; }
+      if(k in n && (typeof v==="boolean"||typeof v==="number"||v==null)){ if(v!=null) n[k]=v; continue; }
+      if(v!=null && v!==false) n.setAttribute(k,String(v));
+    }
+    for(const kid of kids){ if(kid!=null) n.append(kid.nodeType?kid:document.createTextNode(kid)); }
+    return n;
+  }
+
+  function fireConfetti(){
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if(document.getElementById('eft-confetti')) return;
+    const c=document.createElement('canvas'); c.id='eft-confetti'; document.body.appendChild(c);
+    const ctx=c.getContext('2d'); const DPR=Math.min(2,devicePixelRatio||1);
+    function rs(){ c.width=innerWidth*DPR; c.height=innerHeight*DPR; } rs(); addEventListener('resize',rs,{passive:true});
+    const count=Math.min(300, innerWidth<600?140:260);
+    const colors=['#d6b986','#a7895f','#90a4ae','#cfd8dc','#7fb27f','#e57373'];
+    const parts=Array.from({length:count},()=>({x:Math.random()*c.width,y:-Math.random()*c.height*.3,r:4+Math.random()*6,vx:(Math.random()*2-1)*1.1*DPR,vy:(1.6+Math.random()*2.4)*DPR,rot:Math.random()*Math.PI,vr:(Math.random()*2-1)*.15,color:colors[(Math.random()*colors.length)|0]}));
+    const t0=performance.now(), DUR=2300;
+    (function tick(t){
+      ctx.clearRect(0,0,c.width,c.height);
+      parts.forEach(p=>{ p.vy+=.04*DPR; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.r,-p.r*.4,p.r*2,p.r*.8); ctx.restore();
+      });
+      if(t-t0<DUR) requestAnimationFrame(tick); else c.remove();
+    })(t0);
+  }
+  function showToast(msg, actions=[]){
+    const msgEl=document.getElementById('eft-toast-msg');
+    const actEl=toast.querySelector('.toast-actions'); msgEl.textContent=msg; actEl.innerHTML="";
+    actions.forEach(a=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=a.label; b.onclick=a.onClick; actEl.appendChild(b); });
+    toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 5000);
+  }
+  function exportProgress(){
+    const blob=new Blob([JSON.stringify(state.done,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=`eftracker-progress-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function maybeCelebrate(){
+    const s=stats();
+    if(s.kAll>0 && s.kDone===s.kAll && !state.celebrated){
+      state.celebrated=true; localStorage.setItem('eft-kappa-celebrated','true');
+      fireConfetti();
+      showToast("Kappa requirements complete!", [{label:"Export progress", onClick:exportProgress}]);
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+  let searchTimer=null;
+
+  function render(){
+    let restoreSearch=null;
+    const active=document.activeElement;
+    if (active && active.id==='eft-search'){
+      restoreSearch={ value: active.value, start: active.selectionStart, end: active.selectionEnd };
+    }
+
+    captureScroll();
+    const s=stats(); app.innerHTML="";
+
+    const hero=el("div",{class:"hero"},
+      el("h1",{},"EFTRACKER"),
+      el("div",{class:"sub"},"TASK TRACKER SYSTEM v1.0")
+    );
+
+    const err = state.error ? el("div",{class:"err"},
+      el("strong",{},"Error: "), state.error, " ",
+      el("button",{class:"btn",onclick:()=>{ state.error=""; state.loading=true; load(true); }}, "Retry")
+    ) : null;
+
+    const statsRow=el("div",{class:"stats",id:"eft-stats"},
+      el("div",{class:"stat"}, el("div",{class:"num"}, String(s.done)),  el("div",{class:"lbl"},"COMPLETED")),
+      el("div",{class:"stat"}, el("div",{class:"num"}, String(s.total)), el("div",{class:"lbl"},"TOTAL TASKS")),
+      el("div",{class:"stat"}, el("div",{class:"num"}, `${s.kDone}/${s.kAll}`), el("div",{class:"lbl"},"KAPPA PROGRESS")),
+      el("div",{class:"stat"}, el("div",{class:"num"}, `${s.pct}%`), el("div",{class:"lbl"},"COMPLETION"))
+    );
+
+    const allNames=[...new Set(state.tasks.map(t=>t.trader?.name||"Unknown"))];
+    const ordAll=buildColumnOrder(allNames);
+    const dropdown=["ALL", ...ordAll.left, ...ordAll.right];
+
+    const sel=el("select",{ onchange:e=>{ state.traderFilter=e.target.value; renderColumnsOnly(); }});
+    dropdown.forEach(name=> sel.append(el("option",{value:name,selected:state.traderFilter===name}, name==="ALL"?"ALL TRADERS":name)) );
+
+    const kappaOnly=el("label",{}, el("input",{type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
+    const showCompleted=el("label",{}, el("input",{type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
+
+    const searchBox=el("div",{class:"search"},
+      el("input",{id:"eft-search",type:"search",placeholder:"Search tasks…",value:state.search,
+        oninput:e=>{ state.search=e.target.value; if(searchTimer) clearTimeout(searchTimer); searchTimer=setTimeout(()=>renderColumnsOnly(),120); },
+        onkeydown:e=>{ if(e.key==='Enter'){ renderColumnsOnly(true); } }
+      }),
+      el("button",{class:"btn clear",type:"button",onclick:()=>{ state.search=""; renderColumnsOnly(); }}, "Clear")
+    );
+
+    const reset=el("button",{class:"btn",type:"button",onclick:()=>{ if(confirm("Reset all progress?")){ state.done={}; state.celebrated=false; localStorage.removeItem('eft-kappa-celebrated'); saveProgress(); render(); } }}, "Reset progress");
+    const collapseAll=el("button",{class:"btn",type:"button",onclick:()=>{ const g=groups(); const anyOpen=[...g.keys()].some(n=>!state.collapsed[n]); for(const n of g.keys()) state.collapsed[n]=anyOpen; saveUI(); renderColumnsOnly(); }}, "Collapse all");
+
+    const bar=el("div",{class:"bar",id:"eft-bar"},
+      el("label",{},"Trader:"), sel, kappaOnly, showCompleted, searchBox, reset, collapseAll
+    );
+
+    const cols=el("div",{class:"columns"},
+      el("div",{class:"col",id:"eft-col-L"}), el("div",{class:"col",id:"eft-col-R"})
+    );
+
+    app.append(hero, err||document.createComment("noerr"), statsRow, bar, cols);
+
+    if (state.loading){
+      const L=document.getElementById('eft-col-L'), R=document.getElementById('eft-col-R');
+      for(let i=0;i<4;i++){ L.append(el('div',{class:'skeleton'})); R.append(el('div',{class:'skeleton'})); }
+    } else {
+      renderColumnsOnly();
+    }
+
+    requestAnimationFrame(positionSidebar);
+    if (restoreSearch){
+      const sEl = document.getElementById('eft-search');
+      if (sEl){ sEl.focus(); try { sEl.setSelectionRange(restoreSearch.start, restoreSearch.end); } catch {} }
+    }
+  }
+
+  function renderColumnsOnly(scrollToFirst=false){
+    const colsL = document.getElementById('eft-col-L');
+    const colsR = document.getElementById('eft-col-R');
+    if (!colsL || !colsR) return;
+
+    colsL.innerHTML = ""; colsR.innerHTML = "";
+
+    const q = state.search.trim();
+    const gmap=groups(); const present=[...gmap.keys()]; const {left,right}=buildColumnOrder(present);
+
+    let firstMatchEl=null;
+
+    function buildSection(name,list){
+      const doneCount=list.filter(t=>state.done[t.id]).length;
+      const collapse = q ? false : !!state.collapsed[name];
+      const section=el("section",{class:"section"+(collapse?" is-collapsed":""), "data-trader":name});
+      const toggle=el("div",{class:"toggle",onclick:()=>{state.collapsed[name]=!state.collapsed[name]; saveUI(); renderColumnsOnly();}}, collapse?"+":"−");
+      const head=el("div",{class:"sec-head"},
+        el("div",{class:"sec-left"}, toggle, el("div",{class:"sec-title"}, name)),
+        el("div",{class:"sec-count"}, `${doneCount}/${list.length}`)
+      );
+
+      const wrap=el("div",{class:"task-wrap"});
+      for(const t of list){
+        const def=isDefunct(t);
+        const row=el("div",{class:"task"+(state.done[t.id]?" done":"")+(def?" defunct":"")});
+        const top=el("div",{class:"task-row"});
+        const cb=el("input",{type:"checkbox",checked:!!state.done[t.id]});
+        cb.addEventListener("change",e=>{ state.done[t.id]=e.target.checked; saveProgress(); render(); });
+
+        const firstObj = t.objectives?.[0]?.description || "";
+        const nameHtml = hi(t.name, q);
+        const objHtml  = hi(firstObj, q);
+
+        const text=el("div",{style:"flex:1;min-width:0;"},
+          el("div",{class:"t-name", html: nameHtml, title:t.name}),
+          firstObj ? el("div",{class:"t-obj", html: objHtml}) : null
+        );
+
+        const badges=document.createDocumentFragment();
+        if(t.kappaRequired) badges.append(el("span",{class:"t-kappa"},"Kappa"));
+        if(def) badges.append(el("span",{class:"badge-defunct","data-tip":"Limited-time event quest — no longer completable"},"Defunct"));
+
+        top.append(cb, text, badges);
+        row.append(top);
+
+        const tools=el("div",{class:"t-tools"});
+        const detailsBtn=el("button",{class:"mini-btn",type:"button",onclick:()=>{ 
+          const wrapEl = wrap; state.scrollByTrader[name]=wrapEl.scrollTop; 
+          state.openTask[t.id]=!state.openTask[t.id]; saveUI();
+          renderColumnsOnly();
+          requestAnimationFrame(()=>{ wrapEl.scrollTop = state.scrollByTrader[name]||0; });
+        }}, state.openTask[t.id] ? "Hide details" : "▸ Details");
+        tools.append(detailsBtn);
+
+        if (t.wikiLink) tools.append(el("a",{href:t.wikiLink,target:"_blank",rel:"noreferrer noopener",class:"mini-btn"},"Wiki"));
+        row.append(tools);
+
+        if(state.openTask[t.id]){
+          const details=el("div",{class:"details"});
+          if(t.objectives?.length){
+            const ul=el("ul",{style:"margin:0; padding-left:18px;"}); 
+            t.objectives.forEach(o=>{ if(o?.description) ul.append(el("li",{},o.description)); });
+            details.append(ul);
+          } else details.append(el("div",{},"No objective text available."));
+          row.append(details);
+        }
+
+        if (!firstMatchEl && q && (t.name.toLowerCase().includes(q.toLowerCase()) || firstObj.toLowerCase().includes(q.toLowerCase()))) {
+          firstMatchEl = row;
+        }
+
+        wrap.append(row);
+      }
+
+      section.append(head, wrap);
+
+      const saved=state.scrollByTrader[name];
+      if (typeof saved === "number") requestAnimationFrame(()=>{ wrap.scrollTop = saved; });
+
+      return section;
+    }
+
+    left.forEach(n=>{ if(gmap.has(n)) colsL.append(buildSection(n,gmap.get(n))); });
+    right.forEach(n=>{ if(gmap.has(n)) colsR.append(buildSection(n,gmap.get(n))); });
+
+    if (scrollToFirst && firstMatchEl){
+      firstMatchEl.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    positionSidebar();
+    maybeCelebrate();
+  }
+
+  /* Symmetric sidebar: gap to window and to main both == --gap; top snaps to bar */
+  let ticking=false;
+  function onScrollRaf(){ if(!ticking){ ticking=true; requestAnimationFrame(()=>{ positionSidebar(); ticking=false; }); } }
+  function cssGap(){ const v=getComputedStyle(document.documentElement).getPropertyValue('--gap').trim(); return parseFloat(v)||24; }
+
+  function positionSidebar(){
+    const wrap=document.getElementById('eft-wrap');
+    const barEl=document.getElementById('eft-bar');
+    if(!wrap||!barEl||!side) return;
+
+    if (matchMedia('(max-width:1400px)').matches){
+      side.style.position='static'; side.style.left=''; side.style.top=''; side.style.width=''; return;
+    }
+
+    side.style.position='fixed';
+
+    const g   = cssGap();
+    const wR  = wrap.getBoundingClientRect();
+    const sW  = Math.round(wR.left - 2*g);   // width so both gaps == g
+    if (sW <= 140){ side.style.position='static'; side.style.left=''; side.style.top=''; side.style.width=''; return; }
+
+    side.style.left  = g + 'px';
+    side.style.width = sW + 'px';
+
+    const bR  = barEl.getBoundingClientRect();
+    const vvY = window.visualViewport ? window.visualViewport.offsetTop : 0;
+    let top   = Math.round(bR.top + vvY);
+
+    const pad=16, sH=side.getBoundingClientRect().height, maxTop=(window.innerHeight+vvY)-sH-pad;
+    top = Math.max(pad, Math.min(top, maxTop));
+    side.style.top = top + 'px';
+  }
+
+  /* Boot — use cache fast, then refresh */
+  async function load(isRetry=false){
+    if(!isRetry) render();
+    addEventListener('resize', positionSidebar, {passive:true});
+    addEventListener('scroll', onScrollRaf, {passive:true});
+    if (window.visualViewport){
+      visualViewport.addEventListener('resize', positionSidebar);
+      visualViewport.addEventListener('scroll', positionSidebar);
+    }
+
+    const cached = getCache();
+    if (cached && !isRetry){
+      state.tasks = cached.data || cached;
+      state.extended = !!(cached.extended);
+      state.loading = false;
+      render();
+    }
+
+    try{
+      let res=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:EXT_QUERY})});
+      let json=await res.json();
+      if(json.errors) throw new Error(json.errors.map(e=>e.message).join('; '));
+      state.tasks=json.data?.tasks||[]; state.extended=true;
+      setCache({data:state.tasks, extended:true});
+    }catch(e){
+      if(!state.tasks.length){
+        try{
+          const res2=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:BASIC_QUERY})});
+          const json2=await res2.json();
+          state.tasks=json2.data?.tasks||[]; state.extended=false;
+          setCache({data:state.tasks, extended:false});
+        }catch(e2){
+          if(!state.tasks.length){
+            state.error=String(e2?.message||e2||e);
+          }
+        }
+      }
+    }finally{
+      state.loading=false; render();
+    }
+  }
+  load();
+})();
+</script>
