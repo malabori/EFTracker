@@ -1,0 +1,142 @@
+/* === EFTRACKER WordPress skin (blog/archives/single) === */
+/* Scope to blog templates only so other pages stay untouched */
+body.blog, body.archive, body.search, body.single-post {
+  --eft-bg: #0d0f10;
+  --eft-surface: #111416;
+  --eft-ink: #d3d0c4;
+  --eft-muted: #9aa09b;
+  --eft-brass: #d9c89a;
+  --eft-olive: #33382f;
+  --eft-border: rgba(255,255,255,.08);
+  --eft-border-2: rgba(255,255,255,.12);
+  --eft-shadow: 0 10px 40px rgba(0,0,0,.45);
+  background: var(--eft-bg);
+  color: var(--eft-ink);
+  font-family: "Courier New", ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: .02em;
+}
+
+/* Grid + grain overlays */
+body.blog::before, body.archive::before, body.search::before, body.single-post::before,
+body.blog::after,  body.archive::after,  body.search::after,  body.single-post::after {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+body.blog::before, body.archive::before, body.search::before, body.single-post::before {
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px) 0 0 / 16px 16px;
+  mix-blend-mode: screen;
+  opacity: .65;
+  animation: eft-wobble 22s linear infinite;
+  filter: contrast(110%) saturate(105%);
+}
+@keyframes eft-wobble {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-0.6px) skewY(0.1deg); filter: blur(.25px) contrast(112%); }
+  100% { transform: translateY(0); filter: blur(0) contrast(110%); }
+}
+/* lightweight grain using CSS gradients (no big images) */
+body.blog::after, body.archive::after, body.search::after, body.single-post::after {
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,.05) 1px, transparent 1px),
+    radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,.03) 1px, transparent 1px),
+    radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 120px 120px, 140px 140px, 160px 160px;
+  opacity: .18;
+  mix-blend-mode: overlay;
+}
+
+/* Raise real content above overlays */
+body.blog #main-content, body.archive #main-content,
+body.search #main-content, body.single-post #main-content { position: relative; z-index: 1; }
+
+/* Width harmony with EFTRACKER */
+body.blog #main-content .container,
+body.archive #main-content .container,
+body.search #main-content .container,
+body.single-post #main-content .container { max-width: 1120px; }
+
+/* Titles */
+body.blog .entry-title a, body.archive .entry-title a,
+body.search .entry-title a, body.single-post .entry-title {
+  color: var(--eft-brass);
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  text-decoration: none;
+}
+body.blog .entry-title a:hover,
+body.archive .entry-title a:hover { text-shadow: 0 0 24px rgba(217,200,154,.35); }
+
+/* Post cards */
+body.blog .et_pb_post, body.archive .et_pb_post, body.search .et_pb_post {
+  background: var(--eft-surface);
+  border: 1px solid var(--eft-border);
+  border-radius: 16px;
+  box-shadow: var(--eft-shadow);
+  padding: 22px 22px 18px;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+body.blog .et_pb_post:hover,
+body.archive .et_pb_post:hover,
+body.search .et_pb_post:hover {
+  transform: translateY(-2px);
+  border-color: var(--eft-border-2);
+}
+
+/* Meta + text */
+body.blog .post-meta, body.archive .post-meta, body.search .post-meta { color: var(--eft-muted); }
+body.blog p, body.archive p, body.search p, body.single-post p { line-height: 1.6; }
+
+/* Links */
+body.blog a, body.archive a, body.search a, body.single-post a {
+  color: #cfc7a6; text-decoration-color: rgba(217,200,154,.35);
+}
+body.blog a:hover, body.archive a:hover, body.search a:hover, body.single-post a:hover {
+  color: var(--eft-brass); text-decoration-color: rgba(217,200,154,.6);
+}
+
+/* Widgets */
+body.blog .widget, body.archive .widget, body.search .widget, body.single-post .widget {
+  background: var(--eft-surface);
+  border: 1px solid var(--eft-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--eft-shadow);
+}
+
+/* Forms */
+body.blog input, body.blog textarea, body.blog select,
+body.archive input, body.archive textarea, body.archive select,
+body.search input, body.search textarea, body.search select,
+body.single-post input, body.single-post textarea, body.single-post select {
+  background: #0f1214; color: var(--eft-ink);
+  border: 1px solid var(--eft-border-2); border-radius: 12px;
+}
+body.blog input:focus, body.archive input:focus,
+body.search input:focus, body.single-post input:focus {
+  outline: none; box-shadow: 0 0 0 2px rgba(217,200,154,.2);
+}
+
+/* Pagination */
+body.archive .pagination a, body.search .pagination a {
+  border: 1px solid var(--eft-border-2);
+  background:#0f1214; color: var(--eft-ink);
+  border-radius: 12px; padding: 8px 12px;
+}
+body.archive .pagination a:hover, body.search .pagination a:hover {
+  background:#14181b; color: var(--eft-brass);
+}
+
+/* Images in posts */
+body.single-post .entry-content img { border-radius: 12px; box-shadow: var(--eft-shadow); }
+
+/* Small screens */
+@media (max-width: 980px) {
+  body.blog #main-content .container,
+  body.archive #main-content .container,
+  body.search #main-content .container,
+  body.single-post #main-content .container { padding: 0 16px; }
+  body.blog .et_pb_post, body.archive .et_pb_post, body.search .et_pb_post { border-radius: 14px; }
+}
