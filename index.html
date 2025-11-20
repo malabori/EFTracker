@@ -1,8 +1,18 @@
-<!-- EFTRACKER — sidebar symmetry, legal text under menu, mobile burger, task caching -->
-<div id="eft-app"></div>
-
-<style>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EFTRACKER</title>
+  <style>
   html, body { background:#0a0c0e !important; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
   #eft-bg-grid, #eft-bg-noise { position:fixed; inset:0; pointer-events:none; z-index:0; }
   #page-container, #et-boc, body > *:not(#eft-bg-grid):not(#eft-bg-noise){ position:relative; z-index:1; isolation:isolate; }
 
@@ -69,11 +79,12 @@
 
   /* Core UI */
   #eft-cw, #eft-cw * { box-sizing:border-box; }
-  #eft-cw{ color:var(--text); font:14px/1.5 "Courier New", Courier, ui-monospace, Menlo, Consolas, monospace; letter-spacing:.02em; }
+  #eft-cw{ color:var(--text); font:14px/1.6 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; letter-spacing:.01em; }
 
   .hero{ background:linear-gradient(#0f1113,#0b0d0f); border:1px solid var(--line); border-radius:var(--r); padding:22px 26px; margin:0 0 16px; text-align:center; box-shadow:var(--shadow); }
-  .hero h1{ margin:0 0 6px; color:var(--gold); font-size:22px; font-weight:700; letter-spacing:.28em; text-transform:uppercase; text-shadow:0 0 6px rgba(214,185,134,.12); }
-  .hero .sub{ color:var(--gold-2); letter-spacing:.22em; font-size:11px; text-transform:uppercase; }
+  .hero h1{ margin:0 0 6px; color:var(--gold); font-size:22px; font-weight:800; letter-spacing:.26em; text-transform:uppercase; text-shadow:0 0 6px rgba(214,185,134,.12); }
+  .hero .sub{ color:var(--gold-2); letter-spacing:.2em; font-size:11px; text-transform:uppercase; }
+  .hero .lede { margin: 10px auto 0; max-width: 720px; color: var(--muted); font-size: 14px; letter-spacing: .02em; }
 
   .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 16px; }
   .stat{ background:var(--panel); border:1px solid var(--line); border-radius:var(--rsm); padding:12px 14px; text-align:center; }
@@ -167,7 +178,16 @@
   #eft-toast.show { display:flex; }
   .toast-actions .btn { padding:8px 10px; }
   mark.eft-hit { background: rgba(214,185,134,.25); color: inherit; padding: 0 2px; border-radius: 2px; }
+  .nojs { padding: 22px; text-align: center; color: var(--muted); font-weight: 600; }
 </style>
+</head>
+<body>
+  <div id="eft-app">
+    <p class="nojs">Loading EFTRACKER… If nothing appears, please enable JavaScript.</p>
+  </div>
+  <noscript>
+    <div class="nojs">EFTRACKER requires JavaScript to load the quest list.</div>
+  </noscript>
 
 <script data-cfasync="false">
 (function(){
@@ -517,7 +537,8 @@
 
     const hero=el("div",{class:"hero"},
       el("h1",{},"EFTRACKER"),
-      el("div",{class:"sub"},"TASK TRACKER SYSTEM v1.0")
+      el("div",{class:"sub"},"Escape from Tarkov quest tracker"),
+      el("p",{class:"lede"},"Filter, search, and track every task — including Kappa requirements — in a fast, readable layout.")
     );
 
     const err = state.error ? el("div",{class:"err"},
@@ -767,3 +788,5 @@
   load();
 })();
 </script>
+</body>
+</html>
