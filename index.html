@@ -1,8 +1,18 @@
-<!-- EFTRACKER — sidebar symmetry, legal text under menu, mobile burger, task caching -->
-<div id="eft-app"></div>
-
-<style>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EFTRACKER</title>
+  <style>
   html, body { background:#0a0c0e !important; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
   #eft-bg-grid, #eft-bg-noise { position:fixed; inset:0; pointer-events:none; z-index:0; }
   #page-container, #et-boc, body > *:not(#eft-bg-grid):not(#eft-bg-noise){ position:relative; z-index:1; isolation:isolate; }
 
@@ -36,6 +46,7 @@
   @media (prefers-reduced-motion: reduce) { #eft-bg-grid{animation:none} #eft-bg-noise{display:none} }
 
   #eft-wrap{ width:var(--mainW); margin:0 auto; padding:28px 0; }
+  main.shell{ display:block; }
 
   /* Desktop sidebar (left), symmetric spacing enforced by JS */
   #eft-side{ position:fixed; left:var(--gap); top:0; z-index:5; }
@@ -69,11 +80,12 @@
 
   /* Core UI */
   #eft-cw, #eft-cw * { box-sizing:border-box; }
-  #eft-cw{ color:var(--text); font:14px/1.5 "Courier New", Courier, ui-monospace, Menlo, Consolas, monospace; letter-spacing:.02em; }
+  #eft-cw{ color:var(--text); font:14px/1.6 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; letter-spacing:.01em; }
 
   .hero{ background:linear-gradient(#0f1113,#0b0d0f); border:1px solid var(--line); border-radius:var(--r); padding:22px 26px; margin:0 0 16px; text-align:center; box-shadow:var(--shadow); }
-  .hero h1{ margin:0 0 6px; color:var(--gold); font-size:22px; font-weight:700; letter-spacing:.28em; text-transform:uppercase; text-shadow:0 0 6px rgba(214,185,134,.12); }
-  .hero .sub{ color:var(--gold-2); letter-spacing:.22em; font-size:11px; text-transform:uppercase; }
+  .hero h1{ margin:0 0 6px; color:var(--gold); font-size:22px; font-weight:800; letter-spacing:.26em; text-transform:uppercase; text-shadow:0 0 6px rgba(214,185,134,.12); }
+  .hero .sub{ color:var(--gold-2); letter-spacing:.2em; font-size:11px; text-transform:uppercase; }
+  .hero .lede { margin: 10px auto 0; max-width: 720px; color: var(--muted); font-size: 14px; letter-spacing: .02em; }
 
   .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 16px; }
   .stat{ background:var(--panel); border:1px solid var(--line); border-radius:var(--rsm); padding:12px 14px; text-align:center; }
@@ -109,6 +121,10 @@
     .bar{ flex-wrap:wrap; overflow-x:visible; }
     .search{ flex:1 1 100%; }
     .btn, select{ width:100%; }
+  }
+
+  @media (max-width:640px){
+    .bar{ position:static; }
   }
 
   .columns{ display:flex; gap:16px; align-items:flex-start; }
@@ -167,8 +183,16 @@
   #eft-toast.show { display:flex; }
   .toast-actions .btn { padding:8px 10px; }
   mark.eft-hit { background: rgba(214,185,134,.25); color: inherit; padding: 0 2px; border-radius: 2px; }
+  .nojs { padding: 22px; text-align: center; color: var(--muted); font-weight: 600; }
 </style>
-
+</head>
+<body>
+  <div id="eft-app">
+    <p class="nojs">Loading EFTRACKER… If nothing appears, please enable JavaScript.</p>
+  </div>
+  <noscript>
+    <div class="nojs">EFTRACKER requires JavaScript to load the quest list.</div>
+  </noscript>
 <script data-cfasync="false">
 (function(){
   document.title = "EFTRACKER";
@@ -194,11 +218,17 @@
 
   const ENDPOINT = "https://api.tarkov.dev/graphql";
   const EXT_QUERY = `query Tasks { tasks {
-      id name type kappaRequired wikiLink trader { id name }
+      id name kappaRequired wikiLink trader { id name }
       minPlayerLevel taskRequirements { task { id name trader { name } } status }
       objectives { id description }
   } }`;
-  const BASIC_QUERY = `query Tasks { tasks { id name type kappaRequired wikiLink trader { id name } objectives { id description } } }`;
+  const BASIC_QUERY = `query Tasks { tasks { id name kappaRequired wikiLink trader { id name } objectives { id description } } }`;
+
+  /* Story quest mapping — fill from https://escapefromtarkov.fandom.com/wiki/Story_chapters
+     Keep IDs in the native Tarkov.dev task format so filters stay consistent. */
+  const STORY_QUEST_IDS = new Set([
+    // Example: "5ac1b934156ae10c4430e83c",
+  ]);
 
   const ORDER_ROWS = [
     ["Prapor","Therapist"],
@@ -211,16 +241,16 @@
   const DEFUNCT_EXACT = new Set([]); // add exact retired quest names if needed
 
   /* Cache helpers (task list) */
-  const CACHE_KEY='eft_tasks_cache_v2';
+  const CACHE_KEY='eft_tasks_cache_v1';
   const CACHE_TTL=12*60*60*1000; // 12h
-  const getCache=()=>{ try{ const v=JSON.parse(localStorage.getItem(CACHE_KEY)||''); if(v && Date.now()-v.ts<CACHE_TTL) return v.data; }catch{} return null; };
-  const setCache=(data)=>{ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data})); }catch{} };
+  const getCache=()=>{ try{ const v=JSON.parse(localStorage.getItem(CACHE_KEY)||''); if(v && Date.now()-v.ts<CACHE_TTL) return v; }catch{} return null; };
+  const setCache=(data, extended=true)=>{ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data, extended})); }catch{} };
 
   const mount = document.getElementById("eft-app");
   mount.innerHTML = `
     <div id="eft-wrap">
       <!-- Desktop sidebar -->
-      <aside id="eft-side" aria-label="Site">
+      <aside id="eft-side" aria-label="Site navigation">
         <nav class="bubble">
           <div class="title">Menu</div>
           <ul class="snav primary">
@@ -242,7 +272,7 @@
       <div id="eft-offcanvas" aria-hidden="true">
         <div class="panel" role="dialog" aria-modal="true" id="eft-offcanvas-panel">
           <button class="close" type="button" id="eft-offcanvas-close">Close</button>
-          <nav class="bubble" aria-label="Mobile site">
+          <nav class="bubble" aria-label="Mobile site navigation">
             <div class="title">Menu</div>
             <ul class="snav primary">
               <li><a class="slink" href="/sign-in">Sign in</a></li>
@@ -259,8 +289,8 @@
         </div>
       </div>
 
-      <div id="eft-cw"><div class="shell" id="eft-shell"></div></div>
-      <div id="eft-toast"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
+      <div id="eft-cw"><main class="shell" id="eft-shell" role="main"></main></div>
+      <div id="eft-toast" role="status" aria-live="polite"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
     </div>
   `;
 
@@ -288,7 +318,7 @@
     extended: false,
     done: JSON.parse(localStorage.getItem("eft-task-progress-stable")||"{}"),
     traderFilter: "ALL",
-    questTypeFilter: "ALL",
+    questTypeFilter: "Side",
     kappaOnly: false,
     showCompleted: true,
     search: "",
@@ -305,8 +335,9 @@
     const ui = JSON.parse(localStorage.getItem("eft-ui")||"{}");
     state.collapsed = ui.collapsed || {};
     state.openTask  = ui.openTask  || {};
-    if (typeof ui.questType === "string" && ["ALL","Story","Side"].includes(ui.questType)){
-      state.questTypeFilter = ui.questType;
+    if (typeof ui.questType === "string"){
+      if (["Story","Side"].includes(ui.questType)) state.questTypeFilter = ui.questType;
+      if (ui.questType === "ALL") state.questTypeFilter = "Side";
     }
   } catch {}
   const saveProgress=()=>localStorage.setItem("eft-task-progress-stable", JSON.stringify(state.done));
@@ -324,12 +355,19 @@
     return "";
   }
   function questTypeFromTask(task){
+    if (!task) return "Side";
+    if (STORY_QUEST_IDS.has(task.id)) return "Story";
     const explicit = normalizeQuestType(task?.type);
     if(explicit) return explicit;
     return task?.kappaRequired ? "Story" : "Side";
   }
   function questTypeDataAvailable(){
-    return state.tasks.some(t=>normalizeQuestType(t?.type));
+    return STORY_QUEST_IDS.size>0 || state.tasks.some(t=>normalizeQuestType(t?.type));
+  }
+  function ensureQuestTypeFilter(){
+    if(state.questTypeFilter!="Story" && state.questTypeFilter!="Side"){
+      state.questTypeFilter = STORY_QUEST_IDS.size ? "Story" : "Side";
+    }
   }
 
   function getPrereqIdsSameTrader(task, traderName){
@@ -361,10 +399,11 @@
     return ordered.concat(dead);
   }
   function stats(){
-    const total=state.tasks.length;
-    const done=state.tasks.reduce((n,t)=>n+(state.done[t.id]?1:0),0);
-    const kAll=state.tasks.filter(t=>t.kappaRequired).length;
-    const kDone=state.tasks.filter(t=>t.kappaRequired && state.done[t.id]).length;
+    const filtered=filteredTasks({respectCompletion:true});
+    const total=filtered.length;
+    const done=filtered.reduce((n,t)=>n+(state.done[t.id]?1:0),0);
+    const kAll=filtered.filter(t=>t.kappaRequired).length;
+    const kDone=filtered.filter(t=>t.kappaRequired && state.done[t.id]).length;
     const pct= total? Math.round((done/total)*100):0;
     return {total,done,kAll,kDone,pct};
   }
@@ -376,24 +415,30 @@
     return text.replace(r, '<mark class="eft-hit">$1</mark>');
   }
 
-  function groups(){
-    const q = state.search.trim().toLowerCase();
-    const questFilter=state.questTypeFilter;
-    const map=new Map();
-    for (const t of state.tasks){
-      const trader=t.trader?.name||"Unknown";
-      if(state.traderFilter!=="ALL" && state.traderFilter!==trader) continue;
-      const qType=questTypeFromTask(t);
-      if(questFilter!=="ALL" && qType!==questFilter) continue;
-      if(state.kappaOnly && !t.kappaRequired) continue;
-      if(!state.showCompleted && state.done[t.id]) continue;
+  function matchesSearch(t, qLower){
+    if(!qLower) return true;
+    return t.name.toLowerCase().includes(qLower)
+      || (t.trader?.name||"").toLowerCase().includes(qLower)
+      || (t.objectives||[]).some(o=>o?.description?.toLowerCase().includes(qLower));
+  }
 
-      if(q){
-        let hit = t.name.toLowerCase().includes(q)
-               || (t.trader?.name||"").toLowerCase().includes(q)
-               || (t.objectives||[]).some(o=>o?.description?.toLowerCase().includes(q));
-        if(!hit) continue;
-      }
+  function filteredTasks({respectCompletion=true}={}){
+    const qLower = state.search.trim().toLowerCase();
+    return state.tasks.filter(t=>{
+      const trader=t.trader?.name||"Unknown";
+      if(state.traderFilter!=="ALL" && state.traderFilter!==trader) return false;
+      if(questTypeFromTask(t)!==state.questTypeFilter) return false;
+      if(state.kappaOnly && !t.kappaRequired) return false;
+      if(respectCompletion && !state.showCompleted && state.done[t.id]) return false;
+      if(!matchesSearch(t,qLower)) return false;
+      return true;
+    });
+  }
+
+  function groups(){
+    const map=new Map();
+    for (const t of filteredTasks()){
+      const trader=t.trader?.name||"Unknown";
       if(!map.has(trader)) map.set(trader,[]);
       map.get(trader).push(t);
     }
@@ -424,30 +469,29 @@
     return n;
   }
 
-  function buildQuestTypeControl(){
-    const wrap=el("div",{class:"quest-type-group"});
-    wrap.append(el("span",{class:"bar-label"},"Quest type:"));
-    const hasData=questTypeDataAvailable();
-    const toggle=el("div",{class:"quest-toggle",role:"group","aria-label":"Quest type filter"});
-    const options=[
-      {value:"ALL", label:"All"},
-      {value:"Story", label:"Story"},
-      {value:"Side", label:"Side"}
-    ];
-    options.forEach(opt=>{
-      const isActive=state.questTypeFilter===opt.value;
-      const btn=el("button",{
-        type:"button",
-        class:isActive?"is-active":"",
-        "data-value":opt.value,
-        "aria-pressed":String(isActive)
-      },opt.label);
-      if(!hasData && opt.value!=="ALL"){
-        btn.title="Using Kappa requirements until quest data updates";
-      }
-      btn.addEventListener("click",()=>{
-        if(state.questTypeFilter===opt.value) return;
-        state.questTypeFilter=opt.value;
+    function buildQuestTypeControl(){
+      const wrap=el("div",{class:"quest-type-group"});
+      wrap.append(el("span",{class:"bar-label"},"Quest type:"));
+      const hasData=questTypeDataAvailable();
+      const toggle=el("div",{class:"quest-toggle",role:"group","aria-label":"Quest type filter"});
+      const options=[
+        {value:"Side", label:"Side"},
+        {value:"Story", label:"Story"}
+      ];
+      options.forEach(opt=>{
+        const isActive=state.questTypeFilter===opt.value;
+        const btn=el("button",{
+          type:"button",
+          class:isActive?"is-active":"",
+          "data-value":opt.value,
+          "aria-pressed":String(isActive)
+        },opt.label);
+        if(!hasData && opt.value==="Story"){
+          btn.title="Using Kappa requirements until quest data updates";
+        }
+        btn.addEventListener("click",()=>{
+          if(state.questTypeFilter===opt.value) return;
+          state.questTypeFilter=opt.value;
         saveUI();
         toggle.querySelectorAll('button').forEach(b=>{
           const active=b.getAttribute('data-value')===state.questTypeFilter;
@@ -515,9 +559,10 @@
     captureScroll();
     const s=stats(); app.innerHTML="";
 
-    const hero=el("div",{class:"hero"},
+    const hero=el("header",{class:"hero", role:"banner"},
       el("h1",{},"EFTRACKER"),
-      el("div",{class:"sub"},"TASK TRACKER SYSTEM v1.0")
+      el("div",{class:"sub"},"Escape from Tarkov quest tracker"),
+      el("p",{class:"lede"},"Filter, search, and track every task — including Kappa requirements — in a fast, readable layout.")
     );
 
     const err = state.error ? el("div",{class:"err"},
@@ -525,7 +570,7 @@
       el("button",{class:"btn",onclick:()=>{ state.error=""; state.loading=true; load(true); }}, "Retry")
     ) : null;
 
-    const statsRow=el("div",{class:"stats",id:"eft-stats"},
+    const statsRow=el("section",{class:"stats",id:"eft-stats","aria-label":"Progress overview"},
       el("div",{class:"stat"}, el("div",{class:"num"}, String(s.done)),  el("div",{class:"lbl"},"COMPLETED")),
       el("div",{class:"stat"}, el("div",{class:"num"}, String(s.total)), el("div",{class:"lbl"},"TOTAL TASKS")),
       el("div",{class:"stat"}, el("div",{class:"num"}, `${s.kDone}/${s.kAll}`), el("div",{class:"lbl"},"KAPPA PROGRESS")),
@@ -541,8 +586,10 @@
     dropdown.forEach(name=> sel.append(el("option",{value:name,selected:state.traderFilter===name}, name==="ALL"?"ALL TRADERS":name)) );
     const traderLabel=el("label",{for:traderSelectId,class:"bar-label"},"Trader:");
 
-    const kappaOnly=el("label",{}, el("input",{type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
-    const showCompleted=el("label",{}, el("input",{type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
+    const kappaOnlyId='eft-kappa-only';
+    const kappaOnly=el("label",{for:kappaOnlyId}, el("input",{id:kappaOnlyId,type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
+    const showCompletedId='eft-show-completed';
+    const showCompleted=el("label",{for:showCompletedId}, el("input",{id:showCompletedId,type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
     const questTypeControl=buildQuestTypeControl();
 
     const searchBox=el("div",{class:"search"},
@@ -556,7 +603,7 @@
     const reset=el("button",{class:"btn",type:"button",onclick:()=>{ if(confirm("Reset all progress?")){ state.done={}; state.celebrated=false; localStorage.removeItem('eft-kappa-celebrated'); saveProgress(); render(); } }}, "Reset progress");
     const collapseAll=el("button",{class:"btn",type:"button",onclick:()=>{ const g=groups(); const anyOpen=[...g.keys()].some(n=>!state.collapsed[n]); for(const n of g.keys()) state.collapsed[n]=anyOpen; saveUI(); renderColumnsOnly(); }}, "Collapse all");
 
-    const bar=el("div",{class:"bar",id:"eft-bar"},
+    const bar=el("section",{class:"bar",id:"eft-bar","aria-label":"Filters"},
       traderLabel, sel, questTypeControl, kappaOnly, showCompleted, searchBox, reset, collapseAll
     );
 
@@ -588,12 +635,8 @@
     colsL.innerHTML = ""; colsR.innerHTML = "";
 
     const q = state.search.trim();
+    const qLower = q.toLowerCase();
     const gmap=groups();
-    if (!gmap.size && state.tasks.length && state.questTypeFilter !== "ALL"){
-      state.questTypeFilter = "ALL";
-      saveUI();
-      return renderColumnsOnly(scrollToFirst);
-    }
 
     const present=[...gmap.keys()]; const {left,right}=buildColumnOrder(present);
 
@@ -648,14 +691,14 @@
         if(state.openTask[t.id]){
           const details=el("div",{class:"details"});
           if(t.objectives?.length){
-            const ul=el("ul",{style:"margin:0; padding-left:18px;"}); 
+            const ul=el("ul",{style:"margin:0; padding-left:18px;"});
             t.objectives.forEach(o=>{ if(o?.description) ul.append(el("li",{},o.description)); });
             details.append(ul);
           } else details.append(el("div",{},"No objective text available."));
           row.append(details);
         }
 
-        if (!firstMatchEl && q && (t.name.toLowerCase().includes(q.toLowerCase()) || firstObj.toLowerCase().includes(q.toLowerCase()))) {
+        if (!firstMatchEl && q && (t.name.toLowerCase().includes(qLower) || firstObj.toLowerCase().includes(qLower))) {
           firstMatchEl = row;
         }
 
@@ -720,8 +763,9 @@
     side.style.top = top + 'px';
   }
 
-  /* Boot — use cache fast, then refresh */
+  /* Boot — use cache fast, then refresh from the Tarkov.dev task feed */
   async function load(isRetry=false){
+    ensureQuestTypeFilter();
     if(!isRetry) render();
     addEventListener('resize', positionSidebar, {passive:true});
     addEventListener('scroll', onScrollRaf, {passive:true});
@@ -744,26 +788,29 @@
       let json=await res.json();
       if(json.errors) throw new Error(json.errors.map(e=>e.message).join('; '));
       state.tasks=json.data?.tasks||[]; state.extended=true;
-      ensureQuestTypeFilter();
-      setCache({data:state.tasks, extended:true});
+      setCache(state.tasks, true);
     }catch(e){
       if(!state.tasks.length){
         try{
           const res2=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:BASIC_QUERY})});
           const json2=await res2.json();
           state.tasks=json2.data?.tasks||[]; state.extended=false;
-          ensureQuestTypeFilter();
-          setCache({data:state.tasks, extended:false});
+          setCache(state.tasks, false);
         }catch(e2){
+          if(Array.isArray(window.EFT_TASKS) && window.EFT_TASKS.length){
+            state.tasks = window.EFT_TASKS; state.extended=true;
+          }
           if(!state.tasks.length){
-            state.error=String(e2?.message||e2||e);
+            state.error=String(e2?.message||e||e2)||"Unable to load tasks";
           }
         }
       }
     }finally{
-      state.loading=false; render();
+      state.loading=false; ensureQuestTypeFilter(); render();
     }
   }
   load();
 })();
 </script>
+</body>
+</html>
