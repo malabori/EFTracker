@@ -46,6 +46,7 @@
   @media (prefers-reduced-motion: reduce) { #eft-bg-grid{animation:none} #eft-bg-noise{display:none} }
 
   #eft-wrap{ width:var(--mainW); margin:0 auto; padding:28px 0; }
+  main.shell{ display:block; }
 
   /* Desktop sidebar (left), symmetric spacing enforced by JS */
   #eft-side{ position:fixed; left:var(--gap); top:0; z-index:5; }
@@ -122,6 +123,10 @@
     .btn, select{ width:100%; }
   }
 
+  @media (max-width:640px){
+    .bar{ position:static; }
+  }
+
   .columns{ display:flex; gap:16px; align-items:flex-start; }
   .col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:16px; }
   @media (max-width:980px){ .columns{ display:block; } .col{ width:100%; } }
@@ -189,6 +194,35 @@
     <div class="nojs">EFTRACKER requires JavaScript to load the quest list.</div>
   </noscript>
 
+  <script id="eft-data">
+    window.EFT_TASKS = [
+      { id: "prapor-1", name: "Debut", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "prapor", name: "Prapor" }, minPlayerLevel: 1, taskRequirements: [], objectives: [ { id: "o-1", description: "Eliminate 5 Scavs on Customs" }, { id: "o-2", description: "Obtain 2 MP-133 shotguns" } ] },
+      { id: "prapor-2", name: "Checking", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "prapor", name: "Prapor" }, minPlayerLevel: 2, taskRequirements: [ { task: { id: "prapor-1", name: "Debut", trader: { name: "Prapor" } }, status: "complete" } ], objectives: [ { id: "o-3", description: "Find the Bronze pocket watch on Customs" }, { id: "o-4", description: "Hand over the Bronze pocket watch" } ] },
+      { id: "prapor-3", name: "Delivery from the Past", type: "Story", kappaRequired: true, wikiLink: "", trader: { id: "prapor", name: "Prapor" }, minPlayerLevel: 5, taskRequirements: [ { task: { id: "prapor-2", name: "Checking", trader: { name: "Prapor" } }, status: "complete" } ], objectives: [ { id: "o-5", description: "Retrieve the Secure Folder from Customs office" }, { id: "o-6", description: "Stash the Secure Folder in Factory" } ] },
+      { id: "therapist-1", name: "Shortage", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "therapist", name: "Therapist" }, minPlayerLevel: 2, taskRequirements: [], objectives: [ { id: "o-7", description: "Find 3 Salewa kits" }, { id: "o-8", description: "Hand over the Salewa kits" } ] },
+      { id: "therapist-2", name: "Operation Aquarius Part 1", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "therapist", name: "Therapist" }, minPlayerLevel: 6, taskRequirements: [ { task: { id: "therapist-1", name: "Shortage", trader: { name: "Therapist" } }, status: "complete" } ], objectives: [ { id: "o-9", description: "Eliminate Scavs on Customs dorms" } ] },
+      { id: "therapist-3", name: "Operation Aquarius Part 2", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "therapist", name: "Therapist" }, minPlayerLevel: 6, taskRequirements: [ { task: { id: "therapist-2", name: "Operation Aquarius Part 1", trader: { name: "Therapist" } }, status: "complete" } ], objectives: [ { id: "o-10", description: "Survive and exit Customs" } ] },
+      { id: "skier-1", name: "Supplier", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "skier", name: "Skier" }, minPlayerLevel: 5, taskRequirements: [], objectives: [ { id: "o-11", description: "Hand over 4 shotguns and 4 knives" } ] },
+      { id: "skier-2", name: "The Extortionist", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "skier", name: "Skier" }, minPlayerLevel: 7, taskRequirements: [ { task: { id: "skier-1", name: "Supplier", trader: { name: "Skier" } }, status: "complete" } ], objectives: [ { id: "o-12", description: "Find the hidden valuable cargo" }, { id: "o-13", description: "Hand over the valuable cargo" } ] },
+      { id: "skier-3", name: "Chemical Part 1", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "skier", name: "Skier" }, minPlayerLevel: 10, taskRequirements: [ { task: { id: "skier-2", name: "The Extortionist", trader: { name: "Skier" } }, status: "complete" } ], objectives: [ { id: "o-14", description: "Obtain the chemical test results" } ] },
+      { id: "peacekeeper-1", name: "Fishing Gear", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "peacekeeper", name: "Peacekeeper" }, minPlayerLevel: 10, taskRequirements: [], objectives: [ { id: "o-15", description: "Stash sniper rifles on Shoreline" } ] },
+      { id: "peacekeeper-2", name: "Humanitarian Supplies", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "peacekeeper", name: "Peacekeeper" }, minPlayerLevel: 11, taskRequirements: [ { task: { id: "peacekeeper-1", name: "Fishing Gear", trader: { name: "Peacekeeper" } }, status: "complete" } ], objectives: [ { id: "o-16", description: "Mark UN trucks with beacons" } ] },
+      { id: "peacekeeper-3", name: "Spa Tour Part 1", type: "Story", kappaRequired: true, wikiLink: "", trader: { id: "peacekeeper", name: "Peacekeeper" }, minPlayerLevel: 12, taskRequirements: [ { task: { id: "peacekeeper-2", name: "Humanitarian Supplies", trader: { name: "Peacekeeper" } }, status: "complete" } ], objectives: [ { id: "o-17", description: "Visit the Health Resort manager's office" } ] },
+      { id: "mechanic-1", name: "Gunsmith Part 1", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "mechanic", name: "Mechanic" }, minPlayerLevel: 2, taskRequirements: [], objectives: [ { id: "o-18", description: "Modify an MR-133 to meet specifications" } ] },
+      { id: "mechanic-2", name: "Gunsmith Part 2", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "mechanic", name: "Mechanic" }, minPlayerLevel: 4, taskRequirements: [ { task: { id: "mechanic-1", name: "Gunsmith Part 1", trader: { name: "Mechanic" } }, status: "complete" } ], objectives: [ { id: "o-19", description: "Modify an AKS-74U to meet specifications" } ] },
+      { id: "mechanic-3", name: "Signal Part 1", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "mechanic", name: "Mechanic" }, minPlayerLevel: 8, taskRequirements: [], objectives: [ { id: "o-20", description: "Place jammers on Shoreline" } ] },
+      { id: "ragman-1", name: "Only Business", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "ragman", name: "Ragman" }, minPlayerLevel: 2, taskRequirements: [], objectives: [ { id: "o-21", description: "Hand over found in raid items" } ] },
+      { id: "ragman-2", name: "Make ULTRA Great Again", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "ragman", name: "Ragman" }, minPlayerLevel: 10, taskRequirements: [ { task: { id: "ragman-1", name: "Only Business", trader: { name: "Ragman" } }, status: "complete" } ], objectives: [ { id: "o-22", description: "Locate store equipment on Interchange" } ] },
+      { id: "jaeger-1", name: "Acquaintance", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "jaeger", name: "Jaeger" }, minPlayerLevel: 2, taskRequirements: [], objectives: [ { id: "o-23", description: "Find Jaeger's camp and retrieve his message" } ] },
+      { id: "jaeger-2", name: "Introduction", type: "Story", kappaRequired: false, wikiLink: "", trader: { id: "jaeger", name: "Jaeger" }, minPlayerLevel: 3, taskRequirements: [ { task: { id: "jaeger-1", name: "Acquaintance", trader: { name: "Jaeger" } }, status: "complete" } ], objectives: [ { id: "o-24", description: "Hand over Jaeger's note" } ] },
+      { id: "jaeger-3", name: "The Survivalist Path - Thrifty", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "jaeger", name: "Jaeger" }, minPlayerLevel: 6, taskRequirements: [], objectives: [ { id: "o-25", description: "Stash Mosins in specific locations" } ] },
+      { id: "lightkeeper-1", name: "Communication", type: "Story", kappaRequired: true, wikiLink: "", trader: { id: "lightkeeper", name: "Lightkeeper" }, minPlayerLevel: 15, taskRequirements: [], objectives: [ { id: "o-26", description: "Visit the Lighthouse island" } ] },
+      { id: "lightkeeper-2", name: "The Hermit", type: "Side", kappaRequired: true, wikiLink: "", trader: { id: "lightkeeper", name: "Lightkeeper" }, minPlayerLevel: 18, taskRequirements: [ { task: { id: "lightkeeper-1", name: "Communication", trader: { name: "Lightkeeper" } }, status: "complete" } ], objectives: [ { id: "o-27", description: "Deliver tools to the Hermit" } ] },
+      { id: "fence-1", name: "Collector", type: "Story", kappaRequired: true, wikiLink: "", trader: { id: "fence", name: "Fence" }, minPlayerLevel: 20, taskRequirements: [], objectives: [ { id: "o-28", description: "Turn in streamer items" } ] },
+      { id: "ref-1", name: "Head of Corporate Security", type: "Side", kappaRequired: false, wikiLink: "", trader: { id: "ref", name: "Ref" }, minPlayerLevel: 12, taskRequirements: [], objectives: [ { id: "o-29", description: "Eliminate raiders in Streets" } ] }
+    ];
+  </script>
+
 <script data-cfasync="false">
 (function(){
   document.title = "EFTRACKER";
@@ -212,14 +246,6 @@
     document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearInterval(tid); else tid=setInterval(frame,interval); });
   }
 
-  const ENDPOINT = "https://api.tarkov.dev/graphql";
-  const EXT_QUERY = `query Tasks { tasks {
-      id name type kappaRequired wikiLink trader { id name }
-      minPlayerLevel taskRequirements { task { id name trader { name } } status }
-      objectives { id description }
-  } }`;
-  const BASIC_QUERY = `query Tasks { tasks { id name type kappaRequired wikiLink trader { id name } objectives { id description } } }`;
-
   const ORDER_ROWS = [
     ["Prapor","Therapist"],
     ["Fence","Skier"],
@@ -230,17 +256,11 @@
   ];
   const DEFUNCT_EXACT = new Set([]); // add exact retired quest names if needed
 
-  /* Cache helpers (task list) */
-  const CACHE_KEY='eft_tasks_cache_v2';
-  const CACHE_TTL=12*60*60*1000; // 12h
-  const getCache=()=>{ try{ const v=JSON.parse(localStorage.getItem(CACHE_KEY)||''); if(v && Date.now()-v.ts<CACHE_TTL) return v.data; }catch{} return null; };
-  const setCache=(data)=>{ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data})); }catch{} };
-
   const mount = document.getElementById("eft-app");
   mount.innerHTML = `
     <div id="eft-wrap">
       <!-- Desktop sidebar -->
-      <aside id="eft-side" aria-label="Site">
+      <aside id="eft-side" aria-label="Site navigation">
         <nav class="bubble">
           <div class="title">Menu</div>
           <ul class="snav primary">
@@ -262,7 +282,7 @@
       <div id="eft-offcanvas" aria-hidden="true">
         <div class="panel" role="dialog" aria-modal="true" id="eft-offcanvas-panel">
           <button class="close" type="button" id="eft-offcanvas-close">Close</button>
-          <nav class="bubble" aria-label="Mobile site">
+          <nav class="bubble" aria-label="Mobile site navigation">
             <div class="title">Menu</div>
             <ul class="snav primary">
               <li><a class="slink" href="/sign-in">Sign in</a></li>
@@ -279,8 +299,8 @@
         </div>
       </div>
 
-      <div id="eft-cw"><div class="shell" id="eft-shell"></div></div>
-      <div id="eft-toast"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
+      <div id="eft-cw"><main class="shell" id="eft-shell" role="main"></main></div>
+      <div id="eft-toast" role="status" aria-live="polite"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
     </div>
   `;
 
@@ -549,7 +569,7 @@
     captureScroll();
     const s=stats(); app.innerHTML="";
 
-    const hero=el("div",{class:"hero"},
+    const hero=el("header",{class:"hero", role:"banner"},
       el("h1",{},"EFTRACKER"),
       el("div",{class:"sub"},"Escape from Tarkov quest tracker"),
       el("p",{class:"lede"},"Filter, search, and track every task — including Kappa requirements — in a fast, readable layout.")
@@ -560,7 +580,7 @@
       el("button",{class:"btn",onclick:()=>{ state.error=""; state.loading=true; load(true); }}, "Retry")
     ) : null;
 
-    const statsRow=el("div",{class:"stats",id:"eft-stats"},
+    const statsRow=el("section",{class:"stats",id:"eft-stats","aria-label":"Progress overview"},
       el("div",{class:"stat"}, el("div",{class:"num"}, String(s.done)),  el("div",{class:"lbl"},"COMPLETED")),
       el("div",{class:"stat"}, el("div",{class:"num"}, String(s.total)), el("div",{class:"lbl"},"TOTAL TASKS")),
       el("div",{class:"stat"}, el("div",{class:"num"}, `${s.kDone}/${s.kAll}`), el("div",{class:"lbl"},"KAPPA PROGRESS")),
@@ -576,8 +596,10 @@
     dropdown.forEach(name=> sel.append(el("option",{value:name,selected:state.traderFilter===name}, name==="ALL"?"ALL TRADERS":name)) );
     const traderLabel=el("label",{for:traderSelectId,class:"bar-label"},"Trader:");
 
-    const kappaOnly=el("label",{}, el("input",{type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
-    const showCompleted=el("label",{}, el("input",{type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
+    const kappaOnlyId='eft-kappa-only';
+    const kappaOnly=el("label",{for:kappaOnlyId}, el("input",{id:kappaOnlyId,type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
+    const showCompletedId='eft-show-completed';
+    const showCompleted=el("label",{for:showCompletedId}, el("input",{id:showCompletedId,type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
     const questTypeControl=buildQuestTypeControl();
 
     const searchBox=el("div",{class:"search"},
@@ -591,7 +613,7 @@
     const reset=el("button",{class:"btn",type:"button",onclick:()=>{ if(confirm("Reset all progress?")){ state.done={}; state.celebrated=false; localStorage.removeItem('eft-kappa-celebrated'); saveProgress(); render(); } }}, "Reset progress");
     const collapseAll=el("button",{class:"btn",type:"button",onclick:()=>{ const g=groups(); const anyOpen=[...g.keys()].some(n=>!state.collapsed[n]); for(const n of g.keys()) state.collapsed[n]=anyOpen; saveUI(); renderColumnsOnly(); }}, "Collapse all");
 
-    const bar=el("div",{class:"bar",id:"eft-bar"},
+    const bar=el("section",{class:"bar",id:"eft-bar","aria-label":"Filters"},
       traderLabel, sel, questTypeControl, kappaOnly, showCompleted, searchBox, reset, collapseAll
     );
 
@@ -755,9 +777,8 @@
     side.style.top = top + 'px';
   }
 
-  /* Boot — use cache fast, then refresh */
-  async function load(isRetry=false){
-    if(!isRetry) render();
+  /* Boot — hydrate from local data */
+  function load(){
     addEventListener('resize', positionSidebar, {passive:true});
     addEventListener('scroll', onScrollRaf, {passive:true});
     if (window.visualViewport){
@@ -765,39 +786,11 @@
       visualViewport.addEventListener('scroll', positionSidebar);
     }
 
-    const cached = getCache();
-    if (cached && !isRetry){
-      state.tasks = cached.data || cached;
-      state.extended = !!(cached.extended);
-      state.loading = false;
-      ensureQuestTypeFilter();
-      render();
-    }
-
-    try{
-      let res=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:EXT_QUERY})});
-      let json=await res.json();
-      if(json.errors) throw new Error(json.errors.map(e=>e.message).join('; '));
-      state.tasks=json.data?.tasks||[]; state.extended=true;
-      ensureQuestTypeFilter();
-      setCache({data:state.tasks, extended:true});
-    }catch(e){
-      if(!state.tasks.length){
-        try{
-          const res2=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:BASIC_QUERY})});
-          const json2=await res2.json();
-          state.tasks=json2.data?.tasks||[]; state.extended=false;
-          ensureQuestTypeFilter();
-          setCache({data:state.tasks, extended:false});
-        }catch(e2){
-          if(!state.tasks.length){
-            state.error=String(e2?.message||e2||e);
-          }
-        }
-      }
-    }finally{
-      state.loading=false; render();
-    }
+    state.tasks = Array.isArray(window.EFT_TASKS) ? window.EFT_TASKS : [];
+    state.extended = true;
+    state.loading = false;
+    ensureQuestTypeFilter();
+    render();
   }
   load();
 })();
