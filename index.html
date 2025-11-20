@@ -735,6 +735,7 @@
       state.tasks = cached.data || cached;
       state.extended = !!(cached.extended);
       state.loading = false;
+      ensureQuestTypeFilter();
       render();
     }
 
@@ -743,6 +744,7 @@
       let json=await res.json();
       if(json.errors) throw new Error(json.errors.map(e=>e.message).join('; '));
       state.tasks=json.data?.tasks||[]; state.extended=true;
+      ensureQuestTypeFilter();
       setCache({data:state.tasks, extended:true});
     }catch(e){
       if(!state.tasks.length){
@@ -750,6 +752,7 @@
           const res2=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:BASIC_QUERY})});
           const json2=await res2.json();
           state.tasks=json2.data?.tasks||[]; state.extended=false;
+          ensureQuestTypeFilter();
           setCache({data:state.tasks, extended:false});
         }catch(e2){
           if(!state.tasks.length){
