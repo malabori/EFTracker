@@ -332,13 +332,6 @@
     return state.tasks.some(t=>normalizeQuestType(t?.type));
   }
 
-  function ensureQuestTypeFilter(){
-    if(!questTypeDataAvailable() && state.questTypeFilter !== "ALL"){
-      state.questTypeFilter = "ALL";
-      saveUI();
-    }
-  }
-
   function getPrereqIdsSameTrader(task, traderName){
     const reqs = task.taskRequirements || []; const ids=[];
     for (const r of reqs){ const rt=r.task; const tn=rt?.trader?.name; if(rt && tn===traderName) ids.push(rt.id); }
@@ -595,7 +588,14 @@
     colsL.innerHTML = ""; colsR.innerHTML = "";
 
     const q = state.search.trim();
-    const gmap=groups(); const present=[...gmap.keys()]; const {left,right}=buildColumnOrder(present);
+    const gmap=groups();
+    if (!gmap.size && state.tasks.length && state.questTypeFilter !== "ALL"){
+      state.questTypeFilter = "ALL";
+      saveUI();
+      return renderColumnsOnly(scrollToFirst);
+    }
+
+    const present=[...gmap.keys()]; const {left,right}=buildColumnOrder(present);
 
     let firstMatchEl=null;
 
@@ -670,8 +670,14 @@
       return section;
     }
 
-    left.forEach(n=>{ if(gmap.has(n)) colsL.append(buildSection(n,gmap.get(n))); });
-    right.forEach(n=>{ if(gmap.has(n)) colsR.append(buildSection(n,gmap.get(n))); });
+    if (!gmap.size){
+      const emptyMsg = el("div", {class:"err"}, "No tasks match the current filters.");
+      colsL.append(emptyMsg.cloneNode(true));
+      colsR.append(emptyMsg);
+    } else {
+      left.forEach(n=>{ if(gmap.has(n)) colsL.append(buildSection(n,gmap.get(n))); });
+      right.forEach(n=>{ if(gmap.has(n)) colsR.append(buildSection(n,gmap.get(n))); });
+    }
 
     if (scrollToFirst && firstMatchEl){
       firstMatchEl.scrollIntoView({behavior:'smooth', block:'center'});
