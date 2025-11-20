@@ -224,6 +224,12 @@
   } }`;
   const BASIC_QUERY = `query Tasks { tasks { id name kappaRequired wikiLink trader { id name } objectives { id description } } }`;
 
+  /* Story quest mapping — fill from https://escapefromtarkov.fandom.com/wiki/Story_chapters
+     Keep IDs in the native Tarkov.dev task format so filters stay consistent. */
+  const STORY_QUEST_IDS = new Set([
+    // Example: "5ac1b934156ae10c4430e83c",
+  ]);
+
   const ORDER_ROWS = [
     ["Prapor","Therapist"],
     ["Fence","Skier"],
@@ -312,7 +318,7 @@
     extended: false,
     done: JSON.parse(localStorage.getItem("eft-task-progress-stable")||"{}"),
     traderFilter: "ALL",
-    questTypeFilter: "ALL",
+    questTypeFilter: "Side",
     kappaOnly: false,
     showCompleted: true,
     search: "",
@@ -329,8 +335,9 @@
     const ui = JSON.parse(localStorage.getItem("eft-ui")||"{}");
     state.collapsed = ui.collapsed || {};
     state.openTask  = ui.openTask  || {};
-    if (typeof ui.questType === "string" && ["ALL","Story","Side"].includes(ui.questType)){
-      state.questTypeFilter = ui.questType;
+    if (typeof ui.questType === "string"){
+      if (["Story","Side"].includes(ui.questType)) state.questTypeFilter = ui.questType;
+      if (ui.questType === "ALL") state.questTypeFilter = "Side";
     }
   } catch {}
   const saveProgress=()=>localStorage.setItem("eft-task-progress-stable", JSON.stringify(state.done));
@@ -348,12 +355,19 @@
     return "";
   }
   function questTypeFromTask(task){
+    if (!task) return "Side";
+    if (STORY_QUEST_IDS.has(task.id)) return "Story";
     const explicit = normalizeQuestType(task?.type);
     if(explicit) return explicit;
     return task?.kappaRequired ? "Story" : "Side";
   }
   function questTypeDataAvailable(){
-    return state.tasks.some(t=>normalizeQuestType(t?.type));
+    return STORY_QUEST_IDS.size>0 || state.tasks.some(t=>normalizeQuestType(t?.type));
+  }
+  function ensureQuestTypeFilter(){
+    if(state.questTypeFilter!="Story" && state.questTypeFilter!="Side"){
+      state.questTypeFilter = STORY_QUEST_IDS.size ? "Story" : "Side";
+    }
   }
 
   function ensureQuestTypeFilter(){
@@ -399,10 +413,11 @@
     return ordered.concat(dead);
   }
   function stats(){
-    const total=state.tasks.length;
-    const done=state.tasks.reduce((n,t)=>n+(state.done[t.id]?1:0),0);
-    const kAll=state.tasks.filter(t=>t.kappaRequired).length;
-    const kDone=state.tasks.filter(t=>t.kappaRequired && state.done[t.id]).length;
+    const filtered=filteredTasks({respectCompletion:true});
+    const total=filtered.length;
+    const done=filtered.reduce((n,t)=>n+(state.done[t.id]?1:0),0);
+    const kAll=filtered.filter(t=>t.kappaRequired).length;
+    const kDone=filtered.filter(t=>t.kappaRequired && state.done[t.id]).length;
     const pct= total? Math.round((done/total)*100):0;
     return {total,done,kAll,kDone,pct};
   }
@@ -414,24 +429,30 @@
     return text.replace(r, '<mark class="eft-hit">$1</mark>');
   }
 
-  function groups(){
-    const q = state.search.trim().toLowerCase();
-    const questFilter=state.questTypeFilter;
-    const map=new Map();
-    for (const t of state.tasks){
-      const trader=t.trader?.name||"Unknown";
-      if(state.traderFilter!=="ALL" && state.traderFilter!==trader) continue;
-      const qType=questTypeFromTask(t);
-      if(questFilter!=="ALL" && qType!==questFilter) continue;
-      if(state.kappaOnly && !t.kappaRequired) continue;
-      if(!state.showCompleted && state.done[t.id]) continue;
+  function matchesSearch(t, qLower){
+    if(!qLower) return true;
+    return t.name.toLowerCase().includes(qLower)
+      || (t.trader?.name||"").toLowerCase().includes(qLower)
+      || (t.objectives||[]).some(o=>o?.description?.toLowerCase().includes(qLower));
+  }
 
-      if(q){
-        let hit = t.name.toLowerCase().includes(q)
-               || (t.trader?.name||"").toLowerCase().includes(q)
-               || (t.objectives||[]).some(o=>o?.description?.toLowerCase().includes(q));
-        if(!hit) continue;
-      }
+  function filteredTasks({respectCompletion=true}={}){
+    const qLower = state.search.trim().toLowerCase();
+    return state.tasks.filter(t=>{
+      const trader=t.trader?.name||"Unknown";
+      if(state.traderFilter!=="ALL" && state.traderFilter!==trader) return false;
+      if(questTypeFromTask(t)!==state.questTypeFilter) return false;
+      if(state.kappaOnly && !t.kappaRequired) return false;
+      if(respectCompletion && !state.showCompleted && state.done[t.id]) return false;
+      if(!matchesSearch(t,qLower)) return false;
+      return true;
+    });
+  }
+
+  function groups(){
+    const map=new Map();
+    for (const t of filteredTasks()){
+      const trader=t.trader?.name||"Unknown";
       if(!map.has(trader)) map.set(trader,[]);
       map.get(trader).push(t);
     }
@@ -462,30 +483,29 @@
     return n;
   }
 
-  function buildQuestTypeControl(){
-    const wrap=el("div",{class:"quest-type-group"});
-    wrap.append(el("span",{class:"bar-label"},"Quest type:"));
-    const hasData=questTypeDataAvailable();
-    const toggle=el("div",{class:"quest-toggle",role:"group","aria-label":"Quest type filter"});
-    const options=[
-      {value:"ALL", label:"All"},
-      {value:"Story", label:"Story"},
-      {value:"Side", label:"Side"}
-    ];
-    options.forEach(opt=>{
-      const isActive=state.questTypeFilter===opt.value;
-      const btn=el("button",{
-        type:"button",
-        class:isActive?"is-active":"",
-        "data-value":opt.value,
-        "aria-pressed":String(isActive)
-      },opt.label);
-      if(!hasData && opt.value!=="ALL"){
-        btn.title="Using Kappa requirements until quest data updates";
-      }
-      btn.addEventListener("click",()=>{
-        if(state.questTypeFilter===opt.value) return;
-        state.questTypeFilter=opt.value;
+    function buildQuestTypeControl(){
+      const wrap=el("div",{class:"quest-type-group"});
+      wrap.append(el("span",{class:"bar-label"},"Quest type:"));
+      const hasData=questTypeDataAvailable();
+      const toggle=el("div",{class:"quest-toggle",role:"group","aria-label":"Quest type filter"});
+      const options=[
+        {value:"Side", label:"Side"},
+        {value:"Story", label:"Story"}
+      ];
+      options.forEach(opt=>{
+        const isActive=state.questTypeFilter===opt.value;
+        const btn=el("button",{
+          type:"button",
+          class:isActive?"is-active":"",
+          "data-value":opt.value,
+          "aria-pressed":String(isActive)
+        },opt.label);
+        if(!hasData && opt.value==="Story"){
+          btn.title="Using Kappa requirements until quest data updates";
+        }
+        btn.addEventListener("click",()=>{
+          if(state.questTypeFilter===opt.value) return;
+          state.questTypeFilter=opt.value;
         saveUI();
         toggle.querySelectorAll('button').forEach(b=>{
           const active=b.getAttribute('data-value')===state.questTypeFilter;
@@ -629,12 +649,8 @@
     colsL.innerHTML = ""; colsR.innerHTML = "";
 
     const q = state.search.trim();
+    const qLower = q.toLowerCase();
     const gmap=groups();
-    if (!gmap.size && state.tasks.length && state.questTypeFilter !== "ALL"){
-      state.questTypeFilter = "ALL";
-      saveUI();
-      return renderColumnsOnly(scrollToFirst);
-    }
 
     const present=[...gmap.keys()]; const {left,right}=buildColumnOrder(present);
 
@@ -689,14 +705,14 @@
         if(state.openTask[t.id]){
           const details=el("div",{class:"details"});
           if(t.objectives?.length){
-            const ul=el("ul",{style:"margin:0; padding-left:18px;"}); 
+            const ul=el("ul",{style:"margin:0; padding-left:18px;"});
             t.objectives.forEach(o=>{ if(o?.description) ul.append(el("li",{},o.description)); });
             details.append(ul);
           } else details.append(el("div",{},"No objective text available."));
           row.append(details);
         }
 
-        if (!firstMatchEl && q && (t.name.toLowerCase().includes(q.toLowerCase()) || firstObj.toLowerCase().includes(q.toLowerCase()))) {
+        if (!firstMatchEl && q && (t.name.toLowerCase().includes(qLower) || firstObj.toLowerCase().includes(qLower))) {
           firstMatchEl = row;
         }
 
@@ -763,6 +779,7 @@
 
   /* Boot — use cache fast, then refresh from the Tarkov.dev task feed */
   async function load(isRetry=false){
+    ensureQuestTypeFilter();
     if(!isRetry) render();
     addEventListener('resize', positionSidebar, {passive:true});
     addEventListener('scroll', onScrollRaf, {passive:true});
