@@ -436,7 +436,12 @@
     ];
     options.forEach(opt=>{
       const isActive=state.questTypeFilter===opt.value;
-      const btn=el("button",{type:"button",class:isActive?"is-active":"","aria-pressed":String(isActive)},opt.label);
+      const btn=el("button",{
+        type:"button",
+        class:isActive?"is-active":"",
+        "data-value":opt.value,
+        "aria-pressed":String(isActive)
+      },opt.label);
       if(!hasData && opt.value!=="ALL"){
         btn.title="Using Kappa requirements until quest data updates";
       }
@@ -444,6 +449,11 @@
         if(state.questTypeFilter===opt.value) return;
         state.questTypeFilter=opt.value;
         saveUI();
+        toggle.querySelectorAll('button').forEach(b=>{
+          const active=b.getAttribute('data-value')===state.questTypeFilter;
+          b.classList.toggle('is-active', active);
+          b.setAttribute('aria-pressed', String(active));
+        });
         renderColumnsOnly();
       });
       toggle.append(btn);
