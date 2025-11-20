@@ -356,6 +356,20 @@
     return state.tasks.some(t=>normalizeQuestType(t?.type));
   }
 
+  function ensureQuestTypeFilter(){
+    const allowed = ["ALL", "Story", "Side"];
+    if (!allowed.includes(state.questTypeFilter)){
+      state.questTypeFilter = "ALL";
+      saveUI();
+      return;
+    }
+
+    if (!questTypeDataAvailable() && state.questTypeFilter !== "ALL"){
+      state.questTypeFilter = "ALL";
+      saveUI();
+    }
+  }
+
   function getPrereqIdsSameTrader(task, traderName){
     const reqs = task.taskRequirements || []; const ids=[];
     for (const r of reqs){ const rt=r.task; const tn=rt?.trader?.name; if(rt && tn===traderName) ids.push(rt.id); }
