@@ -1,0 +1,28 @@
+@layer tokens {
+  :root {
+    --mainW: 1100px;
+    --gap: 24px;
+    --panel: #121416;
+    --soft: #0e1012;
+    --line: #252a2f;
+    --gold: #d6b986;
+    --gold-2: #a7895f;
+    --text: #d0d6dc;
+    --muted: #8f98a2;
+    --danger: #d85e5e;
+    --danger-2: #8f2f2f;
+    --r: 14px;
+    --rsm: 10px;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  @media (max-width: 1600px) {
+    :root { --mainW: 1000px; --gap: 20px; }
+  }
+  @media (max-width: 1400px) {
+    :root { --mainW: 92vw; --gap: 16px; }
+  }
+  @media (max-width: 980px) {
+    :root { --mainW: 94vw; --gap: 14px; }
+  }
+}
