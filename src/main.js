@@ -1,5 +1,3 @@
-import './styles/main.css';
-
 const ENDPOINT = 'https://api.tarkov.dev/graphql';
 const EXT_QUERY = `query Tasks { tasks {
     id name type kappaRequired wikiLink trader { id name }
