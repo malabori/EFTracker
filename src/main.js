@@ -26,7 +26,6 @@ const state = {
   extended: false,
   done: JSON.parse(localStorage.getItem('eft-task-progress-stable') || '{}'),
   traderFilter: 'ALL',
-  questTypeFilter: 'ALL',
   kappaOnly: false,
   showCompleted: true,
   search: '',
@@ -43,14 +42,11 @@ try {
   const ui = JSON.parse(localStorage.getItem('eft-ui') || '{}');
   state.collapsed = ui.collapsed || {};
   state.openTask = ui.openTask || {};
-  if (typeof ui.questType === 'string' && ['ALL', 'Story', 'Side'].includes(ui.questType)) {
-    state.questTypeFilter = ui.questType;
-  }
 } catch {}
 
 const saveProgress = () => localStorage.setItem('eft-task-progress-stable', JSON.stringify(state.done));
 const saveUI = () =>
-  localStorage.setItem('eft-ui', JSON.stringify({ collapsed: state.collapsed, openTask: state.openTask, questType: state.questTypeFilter }));
+  localStorage.setItem('eft-ui', JSON.stringify({ collapsed: state.collapsed, openTask: state.openTask }));
 
 const refs = {
   side: null,
@@ -187,33 +183,6 @@ const setCache = data => {
 
 const isDefunct = t => DEFUNCT_EXACT.has(t.name);
 
-function normalizeQuestType(raw) {
-  if (!raw) return '';
-  const text = String(raw).trim().toLowerCase();
-  if (!text) return '';
-  if (/\bstory\b/.test(text) || text.includes('storyline')) return 'Story';
-  if (/\bmain\b/.test(text)) return 'Story';
-  if (/\bside\b/.test(text) || /\boptional\b/.test(text)) return 'Side';
-  return '';
-}
-
-function questTypeFromTask(task) {
-  const explicit = normalizeQuestType(task?.type);
-  if (explicit) return explicit;
-  return task?.kappaRequired ? 'Story' : 'Side';
-}
-
-function questTypeDataAvailable() {
-  return state.tasks.some(t => normalizeQuestType(t?.type));
-}
-
-function ensureQuestTypeFilter() {
-  if (!questTypeDataAvailable() && state.questTypeFilter !== 'ALL') {
-    state.questTypeFilter = 'ALL';
-    saveUI();
-  }
-}
-
 function getPrereqIdsSameTrader(task, traderName) {
   const reqs = task.taskRequirements || [];
   const ids = [];
@@ -328,13 +297,10 @@ function hi(text, q) {
 
 function groups() {
   const q = state.search.trim().toLowerCase();
-  const questFilter = state.questTypeFilter;
   const map = new Map();
   for (const t of state.tasks) {
     const trader = t.trader?.name || 'Unknown';
     if (state.traderFilter !== 'ALL' && state.traderFilter !== trader) continue;
-    const qType = questTypeFromTask(t);
-    if (questFilter !== 'ALL' && qType !== questFilter) continue;
     if (state.kappaOnly && !t.kappaRequired) continue;
     if (!state.showCompleted && state.done[t.id]) continue;
 
@@ -408,48 +374,6 @@ function el(tag, attrs = {}, ...kids) {
     if (kid != null) n.append(kid.nodeType ? kid : document.createTextNode(kid));
   }
   return n;
-}
-
-function buildQuestTypeControl() {
-  const wrap = el('div', { class: 'quest-type-group' });
-  wrap.append(el('span', { class: 'bar-label' }, 'Quest type:'));
-  const hasData = questTypeDataAvailable();
-  const toggle = el('div', { class: 'quest-toggle', role: 'group', 'aria-label': 'Quest type filter' });
-  const options = [
-    { value: 'ALL', label: 'All' },
-    { value: 'Story', label: 'Story' },
-    { value: 'Side', label: 'Side' }
-  ];
-  options.forEach(opt => {
-    const isActive = state.questTypeFilter === opt.value;
-    const btn = el(
-      'button',
-      {
-        type: 'button',
-        class: isActive ? 'is-active' : '',
-        'data-value': opt.value,
-        'aria-pressed': String(isActive)
-      },
-      opt.label
-    );
-    if (!hasData && opt.value !== 'ALL') {
-      btn.title = 'Using Kappa requirements until quest data updates';
-    }
-    btn.addEventListener('click', () => {
-      if (state.questTypeFilter === opt.value) return;
-      state.questTypeFilter = opt.value;
-      saveUI();
-      toggle.querySelectorAll('button').forEach(b => {
-        const active = b.getAttribute('data-value') === state.questTypeFilter;
-        b.classList.toggle('is-active', active);
-        b.setAttribute('aria-pressed', String(active));
-      });
-      renderColumnsOnly();
-    });
-    toggle.append(btn);
-  });
-  wrap.append(toggle);
-  return wrap;
 }
 
 function fireConfetti() {
@@ -580,7 +504,6 @@ function render() {
 
   const kappaOnly = el('label', {}, el('input', { type: 'checkbox', checked: state.kappaOnly, onchange: e => { state.kappaOnly = e.target.checked; renderColumnsOnly(); } }), ' Kappa only');
   const showCompleted = el('label', {}, el('input', { type: 'checkbox', checked: state.showCompleted, onchange: e => { state.showCompleted = e.target.checked; renderColumnsOnly(); } }), ' Show completed');
-  const questTypeControl = buildQuestTypeControl();
 
   const searchBox = el(
     'div',
@@ -638,7 +561,7 @@ function render() {
     'Collapse all'
   );
 
-  const bar = el('div', { class: 'bar', id: 'eft-bar' }, traderLabel, sel, questTypeControl, kappaOnly, showCompleted, searchBox, reset, collapseAll);
+  const bar = el('div', { class: 'bar', id: 'eft-bar' }, traderLabel, sel, kappaOnly, showCompleted, searchBox, reset, collapseAll);
 
   const cols = el('div', { class: 'columns' }, el('div', { class: 'col', id: 'eft-col-L' }), el('div', { class: 'col', id: 'eft-col-R' }));
 
@@ -677,11 +600,6 @@ function renderColumnsOnly(scrollToFirst = false) {
 
   const q = state.search.trim();
   const gmap = groups();
-  if (!gmap.size && state.tasks.length && state.questTypeFilter !== 'ALL') {
-    state.questTypeFilter = 'ALL';
-    saveUI();
-    return renderColumnsOnly(scrollToFirst);
-  }
 
   const present = [...gmap.keys()];
   const { left, right } = buildColumnOrder(present);
@@ -884,7 +802,6 @@ async function load(isRetry = false) {
     state.tasks = cached.data || cached;
     state.extended = !!cached.extended;
     state.loading = false;
-    ensureQuestTypeFilter();
     render();
   }
 
@@ -894,7 +811,6 @@ async function load(isRetry = false) {
     if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
     state.tasks = json.data?.tasks || [];
     state.extended = true;
-    ensureQuestTypeFilter();
     setCache({ data: state.tasks, extended: true });
   } catch (e) {
     if (!state.tasks.length) {
@@ -903,7 +819,6 @@ async function load(isRetry = false) {
         const json2 = await res2.json();
         state.tasks = json2.data?.tasks || [];
         state.extended = false;
-        ensureQuestTypeFilter();
         setCache({ data: state.tasks, extended: false });
       } catch (e2) {
         if (!state.tasks.length) {
