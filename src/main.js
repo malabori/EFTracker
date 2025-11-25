@@ -21,10 +21,39 @@ const DEFUNCT_EXACT = new Set([]);
 const CACHE_KEY = 'eft_tasks_cache_v2';
 const CACHE_TTL = 12 * 60 * 60 * 1000;
 
+const safeLocalStorageGet = key => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeLocalStorageSet = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
+const safeLocalStorageRemove = key => {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+};
+
+const readJsonLocalStorage = (key, fallback) => {
+  try {
+    const raw = safeLocalStorageGet(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const state = {
   tasks: [],
   extended: false,
-  done: JSON.parse(localStorage.getItem('eft-task-progress-stable') || '{}'),
+  done: readJsonLocalStorage('eft-task-progress-stable', {}),
   traderFilter: 'ALL',
   kappaOnly: false,
   showCompleted: true,
@@ -33,20 +62,20 @@ const state = {
   openTask: {},
   colMap: {},
   scrollByTrader: {},
-  celebrated: JSON.parse(localStorage.getItem('eft-kappa-celebrated') || 'false'),
+  celebrated: readJsonLocalStorage('eft-kappa-celebrated', false),
   loading: true,
   error: ''
 };
 
 try {
-  const ui = JSON.parse(localStorage.getItem('eft-ui') || '{}');
+  const ui = readJsonLocalStorage('eft-ui', {});
   state.collapsed = ui.collapsed || {};
   state.openTask = ui.openTask || {};
 } catch {}
 
-const saveProgress = () => localStorage.setItem('eft-task-progress-stable', JSON.stringify(state.done));
+const saveProgress = () => safeLocalStorageSet('eft-task-progress-stable', JSON.stringify(state.done));
 const saveUI = () =>
-  localStorage.setItem('eft-ui', JSON.stringify({ collapsed: state.collapsed, openTask: state.openTask }));
+  safeLocalStorageSet('eft-ui', JSON.stringify({ collapsed: state.collapsed, openTask: state.openTask }));
 
 const refs = {
   side: null,
@@ -169,17 +198,13 @@ function initBackground() {
 
 const getCache = () => {
   try {
-    const v = JSON.parse(localStorage.getItem(CACHE_KEY) || '');
+    const v = readJsonLocalStorage(CACHE_KEY, null);
     if (v && Date.now() - v.ts < CACHE_TTL) return v.data;
   } catch {}
   return null;
 };
 
-const setCache = data => {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-  } catch {}
-};
+const setCache = data => safeLocalStorageSet(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
 
 const isDefunct = t => DEFUNCT_EXACT.has(t.name);
 
@@ -452,7 +477,7 @@ function maybeCelebrate() {
   const s = stats();
   if (s.kAll > 0 && s.kDone === s.kAll && !state.celebrated) {
     state.celebrated = true;
-    localStorage.setItem('eft-kappa-celebrated', 'true');
+    safeLocalStorageSet('eft-kappa-celebrated', 'true');
     fireConfetti();
     showToast('Kappa requirements complete!', [{ label: 'Export progress', onClick: exportProgress }]);
   }
@@ -536,7 +561,7 @@ function render() {
         if (confirm('Reset all progress?')) {
           state.done = {};
           state.celebrated = false;
-          localStorage.removeItem('eft-kappa-celebrated');
+          safeLocalStorageRemove('eft-kappa-celebrated');
           saveProgress();
           render();
         }
