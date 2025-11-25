@@ -106,13 +106,6 @@
   .btn{ background:var(--soft); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:13px; cursor:pointer; white-space:nowrap; }
   .btn:hover{ border-color:var(--gold-2); color:var(--gold); }
 
-  .quest-type-group{ display:flex; align-items:center; gap:8px; }
-  .quest-toggle{ display:inline-flex; align-items:stretch; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--soft); }
-  .quest-toggle button{ border:none; background:transparent; color:var(--muted); padding:8px 14px; font:700 11px "Courier New", Courier, ui-monospace; letter-spacing:.18em; text-transform:uppercase; cursor:pointer; transition:color .15s, background .15s; }
-  .quest-toggle button:not(:disabled):hover{ color:var(--gold); }
-  .quest-toggle button.is-active{ background:var(--gold); color:#0b0d0f; }
-  .quest-toggle button:disabled{ opacity:.35; cursor:not-allowed; }
-
   .search{ flex:0 1 220px; display:flex; gap:8px; align-items:center; min-width:160px; }
   .search input{ width:100%; background:#0c0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; outline:none; }
   .search .clear{ white-space:nowrap; }
@@ -313,12 +306,13 @@
   offc?.addEventListener('click', e=>{ if(e.target===offc) toggleMenu(false); });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
 
+  const ACTIVE_QUEST_TYPE = "Side";
+
   const state = {
     tasks: [],
     extended: false,
     done: JSON.parse(localStorage.getItem("eft-task-progress-stable")||"{}"),
     traderFilter: "ALL",
-    questTypeFilter: "Side",
     kappaOnly: false,
     showCompleted: true,
     search: "",
@@ -335,13 +329,9 @@
     const ui = JSON.parse(localStorage.getItem("eft-ui")||"{}");
     state.collapsed = ui.collapsed || {};
     state.openTask  = ui.openTask  || {};
-    if (typeof ui.questType === "string"){
-      if (["Story","Side"].includes(ui.questType)) state.questTypeFilter = ui.questType;
-      if (ui.questType === "ALL") state.questTypeFilter = "Side";
-    }
   } catch {}
   const saveProgress=()=>localStorage.setItem("eft-task-progress-stable", JSON.stringify(state.done));
-  const saveUI=()=>localStorage.setItem("eft-ui", JSON.stringify({collapsed: state.collapsed, openTask: state.openTask, questType: state.questTypeFilter}));
+  const saveUI=()=>localStorage.setItem("eft-ui", JSON.stringify({collapsed: state.collapsed, openTask: state.openTask}));
 
   const isDefunct = t => DEFUNCT_EXACT.has(t.name);
 
@@ -360,28 +350,6 @@
     const explicit = normalizeQuestType(task?.type);
     if(explicit) return explicit;
     return task?.kappaRequired ? "Story" : "Side";
-  }
-  function questTypeDataAvailable(){
-    return STORY_QUEST_IDS.size>0 || state.tasks.some(t=>normalizeQuestType(t?.type));
-  }
-  function ensureQuestTypeFilter(){
-    if(state.questTypeFilter!="Story" && state.questTypeFilter!="Side"){
-      state.questTypeFilter = STORY_QUEST_IDS.size ? "Story" : "Side";
-    }
-  }
-
-  function ensureQuestTypeFilter(){
-    const allowed = ["ALL", "Story", "Side"];
-    if (!allowed.includes(state.questTypeFilter)){
-      state.questTypeFilter = "ALL";
-      saveUI();
-      return;
-    }
-
-    if (!questTypeDataAvailable() && state.questTypeFilter !== "ALL"){
-      state.questTypeFilter = "ALL";
-      saveUI();
-    }
   }
 
   function getPrereqIdsSameTrader(task, traderName){
@@ -441,7 +409,7 @@
     return state.tasks.filter(t=>{
       const trader=t.trader?.name||"Unknown";
       if(state.traderFilter!=="ALL" && state.traderFilter!==trader) return false;
-      if(questTypeFromTask(t)!==state.questTypeFilter) return false;
+      if(questTypeFromTask(t)!==ACTIVE_QUEST_TYPE) return false;
       if(state.kappaOnly && !t.kappaRequired) return false;
       if(respectCompletion && !state.showCompleted && state.done[t.id]) return false;
       if(!matchesSearch(t,qLower)) return false;
@@ -481,43 +449,6 @@
     }
     for(const kid of kids){ if(kid!=null) n.append(kid.nodeType?kid:document.createTextNode(kid)); }
     return n;
-  }
-
-    function buildQuestTypeControl(){
-      const wrap=el("div",{class:"quest-type-group"});
-      wrap.append(el("span",{class:"bar-label"},"Quest type:"));
-      const hasData=questTypeDataAvailable();
-      const toggle=el("div",{class:"quest-toggle",role:"group","aria-label":"Quest type filter"});
-      const options=[
-        {value:"Side", label:"Side"},
-        {value:"Story", label:"Story"}
-      ];
-      options.forEach(opt=>{
-        const isActive=state.questTypeFilter===opt.value;
-        const btn=el("button",{
-          type:"button",
-          class:isActive?"is-active":"",
-          "data-value":opt.value,
-          "aria-pressed":String(isActive)
-        },opt.label);
-        if(!hasData && opt.value==="Story"){
-          btn.title="Using Kappa requirements until quest data updates";
-        }
-        btn.addEventListener("click",()=>{
-          if(state.questTypeFilter===opt.value) return;
-          state.questTypeFilter=opt.value;
-        saveUI();
-        toggle.querySelectorAll('button').forEach(b=>{
-          const active=b.getAttribute('data-value')===state.questTypeFilter;
-          b.classList.toggle('is-active', active);
-          b.setAttribute('aria-pressed', String(active));
-        });
-        renderColumnsOnly();
-      });
-      toggle.append(btn);
-    });
-    wrap.append(toggle);
-    return wrap;
   }
 
   function fireConfetti(){
@@ -604,8 +535,6 @@
     const kappaOnly=el("label",{for:kappaOnlyId}, el("input",{id:kappaOnlyId,type:"checkbox",checked:state.kappaOnly,onchange:e=>{state.kappaOnly=e.target.checked; renderColumnsOnly();}}), " Kappa only");
     const showCompletedId='eft-show-completed';
     const showCompleted=el("label",{for:showCompletedId}, el("input",{id:showCompletedId,type:"checkbox",checked:state.showCompleted,onchange:e=>{state.showCompleted=e.target.checked; renderColumnsOnly();}}), " Show completed");
-    const questTypeControl=buildQuestTypeControl();
-
     const searchBox=el("div",{class:"search"},
       el("input",{id:"eft-search",type:"search",placeholder:"Search tasks…",value:state.search,
         oninput:e=>{ state.search=e.target.value; if(searchTimer) clearTimeout(searchTimer); searchTimer=setTimeout(()=>renderColumnsOnly(),120); },
@@ -618,7 +547,7 @@
     const collapseAll=el("button",{class:"btn",type:"button",onclick:()=>{ const g=groups(); const anyOpen=[...g.keys()].some(n=>!state.collapsed[n]); for(const n of g.keys()) state.collapsed[n]=anyOpen; saveUI(); renderColumnsOnly(); }}, "Collapse all");
 
     const bar=el("section",{class:"bar",id:"eft-bar","aria-label":"Filters"},
-      traderLabel, sel, questTypeControl, kappaOnly, showCompleted, searchBox, reset, collapseAll
+      traderLabel, sel, kappaOnly, showCompleted, searchBox, reset, collapseAll
     );
 
     const cols=el("div",{class:"columns"},
@@ -793,7 +722,6 @@
       state.tasks = cached.data || cached;
       state.extended = !!(cached.extended);
       state.loading = false;
-      ensureQuestTypeFilter();
       render();
     }
 
