@@ -708,6 +708,7 @@
 
   /* Boot — use cache fast, then refresh from the Tarkov.dev task feed */
   async function load(isRetry=false){
+    ensureQuestTypeFilter();
     if(!isRetry) render();
     addEventListener('resize', positionSidebar, {passive:true});
     addEventListener('scroll', onScrollRaf, {passive:true});
@@ -747,7 +748,7 @@
         }
       }
     }finally{
-      state.loading=false; render();
+      state.loading=false; ensureQuestTypeFilter(); render();
     }
   }
   load();
