@@ -217,12 +217,6 @@
   } }`;
   const BASIC_QUERY = `query Tasks { tasks { id name kappaRequired wikiLink trader { id name } objectives { id description } } }`;
 
-  /* Story quest mapping — fill from https://escapefromtarkov.fandom.com/wiki/Story_chapters
-     Keep IDs in the native Tarkov.dev task format so filters stay consistent. */
-  const STORY_QUEST_IDS = new Set([
-    // Example: "5ac1b934156ae10c4430e83c",
-  ]);
-
   const ORDER_ROWS = [
     ["Prapor","Therapist"],
     ["Fence","Skier"],
@@ -335,23 +329,6 @@
 
   const isDefunct = t => DEFUNCT_EXACT.has(t.name);
 
-  function normalizeQuestType(raw){
-    if(!raw) return "";
-    const text=String(raw).trim().toLowerCase();
-    if(!text) return "";
-    if(/\bstory\b/.test(text) || text.includes("storyline")) return "Story";
-    if(/\bmain\b/.test(text)) return "Story";
-    if(/\bside\b/.test(text) || /\boptional\b/.test(text)) return "Side";
-    return "";
-  }
-  function questTypeFromTask(task){
-    if (!task) return "Side";
-    if (STORY_QUEST_IDS.has(task.id)) return "Story";
-    const explicit = normalizeQuestType(task?.type);
-    if(explicit) return explicit;
-    return task?.kappaRequired ? "Story" : "Side";
-  }
-
   function getPrereqIdsSameTrader(task, traderName){
     const reqs = task.taskRequirements || []; const ids=[];
     for (const r of reqs){ const rt=r.task; const tn=rt?.trader?.name; if(rt && tn===traderName) ids.push(rt.id); }
@@ -409,7 +386,6 @@
     return state.tasks.filter(t=>{
       const trader=t.trader?.name||"Unknown";
       if(state.traderFilter!=="ALL" && state.traderFilter!==trader) return false;
-      if(questTypeFromTask(t)!==ACTIVE_QUEST_TYPE) return false;
       if(state.kappaOnly && !t.kappaRequired) return false;
       if(respectCompletion && !state.showCompleted && state.done[t.id]) return false;
       if(!matchesSearch(t,qLower)) return false;
