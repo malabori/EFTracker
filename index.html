@@ -300,6 +300,8 @@
   offc?.addEventListener('click', e=>{ if(e.target===offc) toggleMenu(false); });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
 
+  const ACTIVE_QUEST_TYPE = "Side";
+
   const state = {
     tasks: [],
     extended: false,
@@ -682,6 +684,7 @@
 
   /* Boot — use cache fast, then refresh from the Tarkov.dev task feed */
   async function load(isRetry=false){
+    ensureQuestTypeFilter();
     if(!isRetry) render();
     addEventListener('resize', positionSidebar, {passive:true});
     addEventListener('scroll', onScrollRaf, {passive:true});
@@ -721,7 +724,7 @@
         }
       }
     }finally{
-      state.loading=false; render();
+      state.loading=false; ensureQuestTypeFilter(); render();
     }
   }
   load();
