@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EFTracker Command Edition</title>
-  <meta name="description" content="Escape from Tarkov trader and storyline tracker with Kappa filtering.">
+  <meta name="description" content="Escape from Tarkov unified quest tracker with Kappa filtering.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -110,21 +110,21 @@
 
     .kicker {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.66rem;
-      letter-spacing: 0.18em;
+      color: #8a9388;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
     h1 {
-      margin: 2px 0 0;
-      color: var(--amber);
+      margin: 1px 0 0;
+      color: #bcc3b7;
       font-family: var(--font-title);
-      font-size: clamp(1.15rem, 2.6vw, 1.8rem);
-      letter-spacing: 0.12em;
+      font-size: clamp(1rem, 2.1vw, 1.4rem);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       line-height: 1.1;
-      text-shadow: 0 0 10px rgba(212, 184, 126, 0.2);
+      text-shadow: none;
     }
 
     .head-meta {
@@ -138,12 +138,12 @@
     .chip {
       border: 1px solid var(--line-strong);
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.63rem;
-      letter-spacing: 0.1em;
+      padding: 5px 9px;
+      font-size: 0.59rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #bac4b8;
-      background: rgba(16, 22, 20, 0.76);
+      color: #aeb8ac;
+      background: rgba(16, 22, 20, 0.66);
       white-space: nowrap;
     }
 
@@ -169,7 +169,8 @@
     }
 
     .row.bottom {
-      grid-template-columns: minmax(0, 1fr) minmax(170px, 210px) minmax(170px, 210px) minmax(170px, 210px) auto auto;
+      grid-template-columns: minmax(220px, 320px) auto;
+      justify-content: start;
     }
 
     .search,
@@ -655,101 +656,6 @@
       letter-spacing: 0.08em;
     }
 
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: none;
-      place-items: center;
-      background: rgba(6, 8, 7, 0.8);
-      padding: 14px;
-    }
-
-    .modal-backdrop[data-open="true"] {
-      display: grid;
-    }
-
-    .modal {
-      width: min(680px, 100%);
-      border: 1px solid var(--line-strong);
-      border-radius: 12px;
-      background: linear-gradient(165deg, rgba(20, 27, 25, 0.98), rgba(13, 18, 16, 0.98));
-      box-shadow: var(--shadow);
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .modal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .modal-head h3 {
-      margin: 0;
-      color: var(--amber);
-      font-family: var(--font-title);
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    .close {
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: #111715;
-      color: var(--text);
-      font-size: 1rem;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-    }
-
-    .form {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .form .full {
-      grid-column: 1 / -1;
-    }
-
-    .form-label {
-      margin: 0 0 4px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.11em;
-      font-size: 0.58rem;
-    }
-
-    .textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    .checkbox-line {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 0.66rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #aeb8ad;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(13, 18, 17, 0.8);
-      padding: 8px 10px;
-    }
-
-    .checkbox-line input {
-      accent-color: var(--amber-soft);
-    }
-
     .toast {
       position: fixed;
       left: 50%;
@@ -854,9 +760,6 @@
         max-width: none;
       }
 
-      .form {
-        grid-template-columns: 1fr;
-      }
     }
   </style>
 </head>
@@ -864,8 +767,8 @@
   <div class="app">
     <header class="panel header">
       <div>
-        <p class="kicker">Escape From Tarkov // Command Mission Tracker</p>
-        <h1>Trader + Storyline Board</h1>
+        <p class="kicker">Escape From Tarkov // Unified Quest Tracker</p>
+        <h1>Quest Command Board</h1>
       </div>
       <div class="head-meta">
         <span class="chip">Clock <strong id="clock">--:--:--</strong></span>
@@ -881,22 +784,7 @@
         <button id="syncCatalogBtn" class="btn">Sync Official Catalog</button>
       </div>
       <div class="row bottom">
-        <div class="filter-bar" id="categoryFilters" aria-label="Category">
-          <button class="filter-btn active" data-filter="category" data-value="all">All</button>
-          <button class="filter-btn" data-filter="category" data-value="trader">Trader</button>
-          <button class="filter-btn" data-filter="category" data-value="storyline">Storyline</button>
-          <button class="filter-btn" data-filter="category" data-value="custom">Custom</button>
-        </div>
         <select id="traderSelect" class="select" aria-label="Trader filter"></select>
-        <select id="sortSelect" class="select" aria-label="Sort tasks">
-          <option value="updated">Sort: Updated</option>
-          <option value="level">Sort: Level</option>
-          <option value="progress">Sort: Progress</option>
-          <option value="title">Sort: Title</option>
-          <option value="trader">Sort: Trader</option>
-        </select>
-        <button id="groupToggle" class="toggle" data-on="true">Group: Trader</button>
-        <button id="newTaskBtn" class="btn">New Task</button>
         <button id="clearFiltersBtn" class="btn warn">Reset View</button>
       </div>
     </section>
@@ -925,54 +813,6 @@
         </section>
       </aside>
     </section>
-  </div>
-
-  <div id="taskModal" class="modal-backdrop" data-open="false" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal">
-      <div class="modal-head">
-        <h3 id="modalTitle">Create Custom Task</h3>
-        <button id="closeModalBtn" class="close" aria-label="Close">×</button>
-      </div>
-      <form id="taskForm" class="form">
-        <div>
-          <p class="form-label">Title</p>
-          <input id="formTitle" class="input" required>
-        </div>
-        <div>
-          <p class="form-label">Category</p>
-          <select id="formCategory" class="select" required>
-            <option value="trader">Trader</option>
-            <option value="storyline">Storyline</option>
-            <option value="custom">Custom</option>
-          </select>
-        </div>
-        <div>
-          <p class="form-label">Trader / Chain</p>
-          <input id="formTrader" class="input" placeholder="Prapor, Therapist, Narrative Command..." required>
-        </div>
-        <div>
-          <p class="form-label">Map</p>
-          <input id="formMap" class="input" placeholder="Customs, Streets, Lighthouse...">
-        </div>
-        <div>
-          <p class="form-label">Min Level</p>
-          <input id="formLevel" class="input" type="number" min="1" max="79" value="1">
-        </div>
-        <div class="checkbox-line">
-          <input id="formKappaRequired" type="checkbox">
-          <label for="formKappaRequired">Required for Kappa</label>
-        </div>
-        <div class="full">
-          <p class="form-label">Description</p>
-          <textarea id="formDescription" class="textarea" placeholder="Mission intent and notes..."></textarea>
-        </div>
-        <div class="full">
-          <p class="form-label">Objectives (one per line)</p>
-          <textarea id="formObjectives" class="textarea" placeholder="Enter location\nRetrieve package\nExtract alive"></textarea>
-        </div>
-        <button type="submit" class="btn">Save Task</button>
-      </form>
-    </div>
   </div>
 
   <div class="crt-overlay" aria-hidden="true"></div>
@@ -1022,7 +862,6 @@
         {
           id: "fallback-debut",
           title: "Debut",
-          category: "trader",
           trader: "Prapor",
           map: "Customs",
           level: 1,
@@ -1041,7 +880,6 @@
         {
           id: "fallback-shortage",
           title: "Shortage",
-          category: "trader",
           trader: "Therapist",
           map: "Any",
           level: 1,
@@ -1063,13 +901,10 @@
         tasks: [],
         filters: {
           query: "",
-          category: "all",
           trader: "all",
           showCompleted: true,
           kappaOnly: false
         },
-        sort: "updated",
-        groupByTrader: true,
         selectedTaskId: null,
         activity: [],
         sync: {
@@ -1087,11 +922,7 @@
         kappaToggle: document.getElementById("kappaToggle"),
         showCompletedToggle: document.getElementById("showCompletedToggle"),
         syncCatalogBtn: document.getElementById("syncCatalogBtn"),
-        categoryFilters: document.getElementById("categoryFilters"),
         traderSelect: document.getElementById("traderSelect"),
-        sortSelect: document.getElementById("sortSelect"),
-        groupToggle: document.getElementById("groupToggle"),
-        newTaskBtn: document.getElementById("newTaskBtn"),
         clearFiltersBtn: document.getElementById("clearFiltersBtn"),
         stats: document.getElementById("stats"),
         catalogStatus: document.getElementById("catalogStatus"),
@@ -1102,9 +933,6 @@
         exportBtn: document.getElementById("exportBtn"),
         importBtn: document.getElementById("importBtn"),
         importInput: document.getElementById("importInput"),
-        taskModal: document.getElementById("taskModal"),
-        closeModalBtn: document.getElementById("closeModalBtn"),
-        taskForm: document.getElementById("taskForm"),
         toast: document.getElementById("toast")
       };
 
@@ -1162,15 +990,10 @@
           ? objectivesRaw.map((objective, objectiveIndex) => cleanObjective(objective, objectiveIndex))
           : [{ id: `obj-fallback-${index}`, text: "Complete mission objectives", done: false }];
 
-        const category = ["trader", "storyline", "custom"].includes(task?.category)
-          ? task.category
-          : "custom";
-
         const clean = {
           id: String(task?.id || `task-${Date.now()}-${index}`),
           title: String(task?.title || `Task ${index + 1}`),
-          category,
-          trader: String(task?.trader || (category === "storyline" ? "Narrative Command" : "Operations")),
+          trader: String(task?.trader || "Operations"),
           map: String(task?.map || "Various"),
           level: Math.max(1, Number(task?.level) || 1),
           description: String(task?.description || objectives[0]?.text || "No description"),
@@ -1194,16 +1017,6 @@
         return list.filter((item) => item && typeof item === "object").map((item, index) => sanitizeTask(item, index));
       }
 
-      function inferCategory(rawTask, traderName) {
-        const trader = String(traderName || "").toLowerCase();
-        const title = String(rawTask?.name || "").toLowerCase();
-
-        if (title.includes("broadcast") || title.includes("house arrest")) return "storyline";
-        if (trader.includes("lightkeeper") || trader.includes("ref")) return "storyline";
-        if (!traderName) return "storyline";
-        return "trader";
-      }
-
       function inferMap(name, objectiveDescriptions) {
         const combined = `${name} ${objectiveDescriptions.join(" ")}`.toLowerCase();
         for (const mapName of MAP_HINTS) {
@@ -1215,8 +1028,7 @@
       function normalizeOfficialTask(rawTask, index) {
         const id = String(rawTask?.id || `official-${index}`);
         const title = String(rawTask?.name || `Official Task ${index + 1}`);
-        const traderName = String(rawTask?.trader?.name || "Narrative Command");
-        const category = inferCategory(rawTask, rawTask?.trader?.name);
+        const traderName = String(rawTask?.trader?.name || "Operations");
 
         const objectiveDescriptions = Array.isArray(rawTask?.objectives)
           ? rawTask.objectives.map((objective) => String(objective?.description || "").trim()).filter(Boolean)
@@ -1233,13 +1045,12 @@
         return {
           id: `official:${id}`,
           title,
-          category,
           trader: traderName,
           map: inferMap(title, objectiveDescriptions),
           level: Math.max(1, Number(rawTask?.minPlayerLevel) || 1),
           description: objectiveDescriptions[0] || "No objective description available.",
           objectives,
-          tags: [category, traderName.toLowerCase().replace(/\s+/g, "-")],
+          tags: [traderName.toLowerCase().replace(/\s+/g, "-")],
           kappaRequired: Boolean(rawTask?.kappaRequired),
           completed: false,
           updatedAt: nowIso(),
@@ -1360,8 +1171,7 @@
       function filteredTasks() {
         const query = state.filters.query.toLowerCase();
 
-        let list = state.tasks.filter((task) => {
-          if (state.filters.category !== "all" && task.category !== state.filters.category) return false;
+        return state.tasks.filter((task) => {
           if (state.filters.trader !== "all" && task.trader !== state.filters.trader) return false;
           if (!state.filters.showCompleted && task.completed) return false;
           if (state.filters.kappaOnly && !task.kappaRequired) return false;
@@ -1380,45 +1190,12 @@
 
           return true;
         });
-
-        list.sort((a, b) => {
-          if (state.sort === "level" && a.level !== b.level) return a.level - b.level;
-          if (state.sort === "progress") {
-            const pa = progress(a);
-            const pb = progress(b);
-            if (pa !== pb) return pb - pa;
-          }
-          if (state.sort === "updated") {
-            const ta = new Date(a.updatedAt).getTime();
-            const tb = new Date(b.updatedAt).getTime();
-            if (ta !== tb) return tb - ta;
-          }
-          if (state.sort === "trader") {
-            const cmp = a.trader.localeCompare(b.trader);
-            if (cmp !== 0) return cmp;
-          }
-          return a.title.localeCompare(b.title);
-        });
-
-        return list;
       }
 
       function groupedTasks(tasks) {
-        if (!state.groupByTrader) {
-          const bucket = {
-            Trader: tasks.filter((task) => task.category === "trader"),
-            Storyline: tasks.filter((task) => task.category === "storyline"),
-            Custom: tasks.filter((task) => task.category === "custom")
-          };
-
-          return Object.entries(bucket)
-            .filter(([, group]) => group.length)
-            .map(([name, group]) => ({ name, tasks: group }));
-        }
-
         const groups = new Map();
         for (const task of tasks) {
-          const name = task.category === "trader" ? `Trader // ${task.trader}` : `${capitalize(task.category)} // ${task.trader}`;
+          const name = task.trader || "Operations";
           if (!groups.has(name)) groups.set(name, []);
           groups.get(name).push(task);
         }
@@ -1559,7 +1336,7 @@
 
         refs.detailPane.innerHTML = `
           <h2>${escapeHtml(task.title)}</h2>
-          <p class="sub">${escapeHtml(capitalize(task.category))} // ${escapeHtml(task.trader)}</p>
+          <p class="sub">${escapeHtml(task.trader)}</p>
           <p class="desc">${escapeHtml(task.description)}</p>
           <div class="meta-row">
             <span class="tag">Map: ${escapeHtml(task.map)}</span>
@@ -1605,7 +1382,6 @@
 
       function renderFilterState() {
         refs.searchInput.value = state.filters.query;
-        refs.sortSelect.value = state.sort;
 
         refs.kappaToggle.dataset.on = String(state.filters.kappaOnly);
         refs.kappaToggle.textContent = `Kappa Only: ${state.filters.kappaOnly ? "On" : "Off"}`;
@@ -1613,22 +1389,13 @@
         refs.showCompletedToggle.dataset.on = String(state.filters.showCompleted);
         refs.showCompletedToggle.textContent = `Show Completed: ${state.filters.showCompleted ? "On" : "Off"}`;
 
-        refs.groupToggle.dataset.on = String(state.groupByTrader);
-        refs.groupToggle.textContent = `Group: ${state.groupByTrader ? "Trader" : "Category"}`;
-
         refs.kappaBadge.innerHTML = `Kappa Mode <strong>${state.filters.kappaOnly ? "ON" : "OFF"}</strong>`;
-
-        refs.categoryFilters.querySelectorAll(".filter-btn[data-filter='category']").forEach((button) => {
-          button.classList.toggle("active", button.dataset.value === state.filters.category);
-        });
       }
 
       function saveState() {
         writeJson(STORAGE_KEY, {
           tasks: state.tasks,
           filters: state.filters,
-          sort: state.sort,
-          groupByTrader: state.groupByTrader,
           selectedTaskId: state.selectedTaskId,
           activity: state.activity,
           sync: {
@@ -1687,58 +1454,6 @@
         rerender();
       }
 
-      function openModal() {
-        refs.taskModal.dataset.open = "true";
-        document.getElementById("formTitle")?.focus();
-      }
-
-      function closeModal() {
-        refs.taskModal.dataset.open = "false";
-        refs.taskForm.reset();
-      }
-
-      function createCustomTask(form) {
-        const title = String(form.title || "").trim();
-        if (!title) {
-          showToast("Task title is required");
-          return;
-        }
-
-        const objectiveLines = String(form.objectives || "")
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-
-        const objectives = objectiveLines.length
-          ? objectiveLines.map((line) => ({ id: uid(), text: line, done: false }))
-          : [{ id: uid(), text: "Complete mission objectives", done: false }];
-
-        const category = ["trader", "storyline", "custom"].includes(form.category) ? form.category : "custom";
-
-        const task = {
-          id: `custom:${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          title,
-          category,
-          trader: String(form.trader || "Operations").trim() || "Operations",
-          map: String(form.map || "Various").trim() || "Various",
-          level: Math.max(1, Number(form.level) || 1),
-          description: String(form.description || "No description provided.").trim() || "No description provided.",
-          objectives,
-          tags: ["custom", category],
-          kappaRequired: Boolean(form.kappaRequired),
-          completed: false,
-          updatedAt: nowIso(),
-          source: "custom",
-          wikiLink: ""
-        };
-
-        state.tasks.unshift(task);
-        state.selectedTaskId = task.id;
-        addActivity(`Custom task created: ${task.title}`);
-        showToast(`Created ${task.title}`);
-        rerender();
-      }
-
       function exportTasks() {
         const payload = {
           exportedAt: nowIso(),
@@ -1785,13 +1500,10 @@
       function clearView() {
         state.filters = {
           query: "",
-          category: "all",
           trader: "all",
           showCompleted: true,
           kappaOnly: false
         };
-        state.sort = "updated";
-        state.groupByTrader = true;
         addActivity("View reset to defaults.");
         showToast("View reset");
         rerender();
@@ -1804,13 +1516,10 @@
           state.tasks = sanitizeTaskList(saved.tasks);
           state.filters = {
             query: String(saved.filters?.query || ""),
-            category: saved.filters?.category || "all",
             trader: saved.filters?.trader || "all",
             showCompleted: typeof saved.filters?.showCompleted === "boolean" ? saved.filters.showCompleted : true,
             kappaOnly: typeof saved.filters?.kappaOnly === "boolean" ? saved.filters.kappaOnly : false
           };
-          state.sort = saved.sort || "updated";
-          state.groupByTrader = typeof saved.groupByTrader === "boolean" ? saved.groupByTrader : true;
           state.selectedTaskId = saved.selectedTaskId || state.tasks[0]?.id || null;
           state.activity = Array.isArray(saved.activity) ? saved.activity.slice(0, ACTIVITY_LIMIT) : [];
           state.sync.lastSync = saved.sync?.lastSync || null;
@@ -1852,29 +1561,10 @@
           syncOfficialCatalog({ forceNetwork: true, announce: true });
         });
 
-        refs.categoryFilters.addEventListener("click", (event) => {
-          const button = event.target.closest(".filter-btn[data-filter='category']");
-          if (!button) return;
-          state.filters.category = button.dataset.value || "all";
-          rerender();
-        });
-
         refs.traderSelect.addEventListener("change", () => {
           state.filters.trader = refs.traderSelect.value;
           rerender();
         });
-
-        refs.sortSelect.addEventListener("change", () => {
-          state.sort = refs.sortSelect.value;
-          rerender();
-        });
-
-        refs.groupToggle.addEventListener("click", () => {
-          state.groupByTrader = !state.groupByTrader;
-          rerender();
-        });
-
-        refs.newTaskBtn.addEventListener("click", openModal);
         refs.clearFiltersBtn.addEventListener("click", clearView);
 
         refs.groups.addEventListener("click", (event) => {
@@ -1905,30 +1595,6 @@
           toggleObjective(checkbox.dataset.taskId, checkbox.dataset.objectiveId);
         });
 
-        refs.closeModalBtn.addEventListener("click", closeModal);
-        refs.taskModal.addEventListener("click", (event) => {
-          if (event.target === refs.taskModal) closeModal();
-        });
-
-        document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape" && refs.taskModal.dataset.open === "true") closeModal();
-        });
-
-        refs.taskForm.addEventListener("submit", (event) => {
-          event.preventDefault();
-          createCustomTask({
-            title: document.getElementById("formTitle").value,
-            category: document.getElementById("formCategory").value,
-            trader: document.getElementById("formTrader").value,
-            map: document.getElementById("formMap").value,
-            level: document.getElementById("formLevel").value,
-            description: document.getElementById("formDescription").value,
-            objectives: document.getElementById("formObjectives").value,
-            kappaRequired: document.getElementById("formKappaRequired").checked
-          });
-          closeModal();
-        });
-
         refs.exportBtn.addEventListener("click", exportTasks);
         refs.importBtn.addEventListener("click", () => {
           refs.importInput.value = "";
@@ -1950,10 +1616,6 @@
           .replaceAll("'", "&#39;");
       }
 
-      function capitalize(value) {
-        return value.charAt(0).toUpperCase() + value.slice(1);
-      }
-
       async function init() {
         hydrate();
         bindEvents();
@@ -1967,20 +1629,16 @@
           state.sync.error = "";
           state.filters = {
             query: "",
-            category: "all",
             trader: "all",
             showCompleted: true,
             kappaOnly: false
           };
-          state.sort = "updated";
-          state.groupByTrader = true;
           addActivity(`Offline official snapshot loaded (${OFFLINE_OFFICIAL_TASKS.length} tasks).`);
         }
 
         if (state.tasks.length > 100 && filteredTasks().length === 0) {
           state.filters = {
             query: "",
-            category: "all",
             trader: "all",
             showCompleted: true,
             kappaOnly: false
