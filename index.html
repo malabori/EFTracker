@@ -2,19 +2,2041 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EFTRACKER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EFTracker Command Board</title>
+  <meta name="description" content="Escape from Tarkov task tracker for trader and storyline progression.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    html, body { background: #0a0c0e !important; }
-    body { margin: 0; min-height: 100vh; }
+    :root {
+      --bg-0: #070809;
+      --bg-1: #0d1111;
+      --bg-2: #131819;
+      --panel: #121716;
+      --panel-alt: #161d1b;
+      --line: #2e3a37;
+      --line-bright: #495a55;
+      --text: #dde1d4;
+      --muted: #8f978f;
+      --amber: #d3b67a;
+      --amber-soft: #aa9166;
+      --olive: #5a6646;
+      --red: #8a4f43;
+      --green: #64734e;
+      --blue: #4d6772;
+      --critical: #a95445;
+      --high: #9e7545;
+      --medium: #77824e;
+      --low: #566d72;
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.46);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --mono: "IBM Plex Mono", "Cascadia Mono", "Roboto Mono", monospace;
+      --display: "Chakra Petch", "Agency FB", "Eurostile", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(120% 100% at 10% -10%, rgba(159, 118, 60, 0.16), transparent 55%),
+        radial-gradient(120% 120% at 95% 110%, rgba(101, 119, 81, 0.17), transparent 45%),
+        linear-gradient(165deg, var(--bg-0), #090d0d 52%, #0a0f0f);
+      color: var(--text);
+      font-family: var(--mono);
+      letter-spacing: 0.01em;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.015) 0,
+          rgba(255, 255, 255, 0.015) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+      opacity: 0.42;
+      mix-blend-mode: soft-light;
+    }
+
+    body::after {
+      background:
+        radial-gradient(circle at 50% -10%, rgba(225, 190, 126, 0.12), transparent 55%),
+        radial-gradient(circle at 60% 120%, rgba(104, 132, 83, 0.12), transparent 45%);
+      filter: blur(16px);
+      opacity: 0.85;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1500px, 95vw);
+      margin: 24px auto 36px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      position: relative;
+      background:
+        linear-gradient(160deg, rgba(18, 24, 22, 0.96), rgba(14, 18, 17, 0.95));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(212, 182, 122, 0.08), transparent 40%),
+        linear-gradient(0deg, rgba(255, 255, 255, 0.01), transparent 35%);
+      pointer-events: none;
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      padding: 18px 20px;
+      align-items: center;
+    }
+
+    .masthead h1 {
+      margin: 2px 0 0;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 2.8vw, 2rem);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      text-shadow: 0 0 12px rgba(211, 182, 122, 0.2);
+    }
+
+    .masthead .kicker {
+      margin: 0;
+      font-size: 0.73rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .mast-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .meta-chip {
+      border: 1px solid var(--line-bright);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(24, 33, 31, 0.72);
+      color: var(--text);
+      font-size: 0.74rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .meta-chip strong {
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(300px, 340px);
+      gap: 14px;
+      min-height: 78vh;
+    }
+
+    .rail {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      max-height: calc(100vh - 164px);
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.96rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--amber);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(13, 18, 17, 0.85);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px;
+      font: 500 0.85rem/1.3 var(--mono);
+    }
+
+    .textarea {
+      resize: vertical;
+      min-height: 84px;
+    }
+
+    .input::placeholder,
+    .textarea::placeholder {
+      color: #657069;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus,
+    .chip:focus,
+    .btn:focus,
+    .toggle:focus {
+      outline: 2px solid rgba(211, 182, 122, 0.6);
+      outline-offset: 1px;
+      border-color: var(--amber-soft);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(16, 22, 20, 0.8);
+      color: var(--text);
+      padding: 7px 11px;
+      font: 600 0.72rem/1 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, transform 0.2s;
+    }
+
+    .chip:hover {
+      border-color: var(--amber-soft);
+      color: var(--amber);
+      transform: translateY(-1px);
+    }
+
+    .chip.active {
+      border-color: var(--amber);
+      background: rgba(61, 52, 34, 0.4);
+      color: var(--amber);
+      box-shadow: inset 0 0 0 1px rgba(211, 182, 122, 0.2);
+    }
+
+    .chip[data-priority="critical"].active { border-color: var(--critical); color: #e7b2a8; background: rgba(95, 45, 36, 0.36); }
+    .chip[data-priority="high"].active { border-color: var(--high); color: #e4c090; background: rgba(97, 68, 38, 0.35); }
+    .chip[data-priority="medium"].active { border-color: var(--medium); color: #d4dda3; background: rgba(60, 76, 38, 0.35); }
+    .chip[data-priority="low"].active { border-color: var(--low); color: #b5d2dc; background: rgba(39, 58, 65, 0.35); }
+
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: rgba(16, 21, 19, 0.72);
+    }
+
+    .toggle-row span {
+      font-size: 0.77rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .toggle {
+      border: 1px solid var(--line);
+      background: #0d1211;
+      color: var(--amber);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font: 600 0.68rem/1 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+    }
+
+    .toggle[data-on="true"] {
+      border-color: var(--amber);
+      box-shadow: inset 0 0 0 1px rgba(211, 182, 122, 0.24);
+      background: rgba(61, 52, 34, 0.42);
+    }
+
+    .btn-row {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .btn {
+      border: 1px solid var(--line-bright);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #1b2321, #121816);
+      color: var(--text);
+      padding: 9px 10px;
+      font: 600 0.74rem/1 var(--mono);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .btn.full {
+      grid-column: 1 / -1;
+    }
+
+    .btn.warn {
+      border-color: #7f5a45;
+      color: #dfb58d;
+      background: linear-gradient(180deg, #2a1e18, #19120e);
+    }
+
+    .center {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      max-height: calc(100vh - 164px);
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(15, 20, 18, 0.78);
+      min-height: 82px;
+      display: grid;
+      align-content: space-between;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.67rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .stat .value {
+      font-family: var(--display);
+      font-size: 1.8rem;
+      letter-spacing: 0.03em;
+      color: var(--amber);
+      margin: 2px 0 0;
+    }
+
+    .stat .hint {
+      color: #94a198;
+      font-size: 0.7rem;
+      margin: 0;
+    }
+
+    .toolbar {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(14, 19, 17, 0.8);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .board {
+      display: grid;
+      gap: 14px;
+    }
+
+    .group {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(11, 16, 15, 0.7);
+    }
+
+    .group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(72, 87, 81, 0.5);
+      background: linear-gradient(180deg, rgba(27, 35, 33, 0.78), rgba(17, 23, 21, 0.72));
+    }
+
+    .group-head h3 {
+      margin: 0;
+      font-family: var(--display);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.9rem;
+      color: #dbc795;
+    }
+
+    .group-head .count {
+      border: 1px solid var(--line-bright);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      color: #b9c2b7;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .task {
+      border: 1px solid rgba(72, 87, 81, 0.56);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(20, 26, 24, 0.9), rgba(14, 18, 17, 0.92));
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      transition: border-color 0.22s, transform 0.22s, box-shadow 0.22s;
+      cursor: pointer;
+    }
+
+    .task:hover {
+      transform: translateY(-1px);
+      border-color: rgba(171, 148, 98, 0.8);
+      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.26);
+    }
+
+    .task.active {
+      border-color: rgba(211, 182, 122, 0.95);
+      box-shadow: 0 0 0 1px rgba(211, 182, 122, 0.2), 0 14px 28px rgba(0, 0, 0, 0.3);
+    }
+
+    .task.completed {
+      opacity: 0.84;
+      border-color: rgba(109, 131, 88, 0.78);
+    }
+
+    .task-top {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.35);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+    }
+
+    .status-dot[data-priority="critical"] { background: var(--critical); }
+    .status-dot[data-priority="high"] { background: var(--high); }
+    .status-dot[data-priority="medium"] { background: var(--medium); }
+    .status-dot[data-priority="low"] { background: var(--low); }
+
+    .task h4 {
+      margin: 0;
+      font-size: 0.86rem;
+      letter-spacing: 0.04em;
+      line-height: 1.35;
+      color: #dce2d6;
+    }
+
+    .complete-btn {
+      border: 1px solid var(--line);
+      background: #101614;
+      color: #8f9f92;
+      border-radius: 999px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font: 700 0.85rem/1 var(--mono);
+      display: grid;
+      place-items: center;
+    }
+
+    .complete-btn[data-done="true"] {
+      border-color: #74895b;
+      color: #c8dbac;
+      background: rgba(77, 100, 55, 0.3);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .pill {
+      border: 1px solid rgba(85, 100, 94, 0.65);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #afb8ad;
+      background: rgba(16, 22, 20, 0.7);
+    }
+
+    .pill.priority-critical { border-color: rgba(163, 84, 69, 0.8); color: #dba298; }
+    .pill.priority-high { border-color: rgba(153, 117, 69, 0.8); color: #d8b68a; }
+    .pill.priority-medium { border-color: rgba(119, 130, 78, 0.8); color: #c6d197; }
+    .pill.priority-low { border-color: rgba(86, 109, 114, 0.8); color: #aac2cb; }
+
+    .desc {
+      margin: 0;
+      color: #b0b8ae;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      min-height: 2.7em;
+    }
+
+    .progress {
+      display: grid;
+      gap: 5px;
+    }
+
+    .progress .top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8e988f;
+    }
+
+    .bar {
+      height: 8px;
+      border: 1px solid rgba(83, 98, 91, 0.64);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #0d1211;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #64734e, #d3b67a);
+      transition: width 0.24s ease;
+    }
+
+    .empty {
+      border: 1px dashed rgba(87, 104, 95, 0.7);
+      border-radius: 12px;
+      padding: 22px 16px;
+      text-align: center;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.72rem;
+      background: rgba(13, 18, 17, 0.72);
+    }
+
+    .detail {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail h3 {
+      margin: 0;
+      color: var(--amber);
+      font-family: var(--display);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    .detail .sub {
+      margin: 0;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.68rem;
+    }
+
+    .objective-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 7px;
+    }
+
+    .objective {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16, 22, 20, 0.72);
+      padding: 7px 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.76rem;
+      line-height: 1.4;
+      color: #c1cabc;
+    }
+
+    .objective input[type="checkbox"] {
+      margin-top: 1px;
+      accent-color: var(--amber-soft);
+    }
+
+    .objective.done {
+      border-color: rgba(105, 125, 86, 0.8);
+      color: #9eaf98;
+      text-decoration: line-through;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 0.66rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .timeline {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .timeline li {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(14, 19, 17, 0.72);
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: #b7c0b4;
+    }
+
+    .timeline time {
+      color: #92a195;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.64rem;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: rgba(6, 9, 8, 0.78);
+      display: none;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop[data-open="true"] {
+      display: grid;
+    }
+
+    .modal {
+      width: min(720px, 100%);
+      border: 1px solid var(--line-bright);
+      border-radius: 14px;
+      background: linear-gradient(165deg, #161d1b, #101514);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      font-size: 1rem;
+    }
+
+    .close {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      background: #111715;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .form {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .form .full {
+      grid-column: 1 / -1;
+    }
+
+    .footnote {
+      border-top: 1px solid var(--line);
+      margin-top: 2px;
+      padding-top: 8px;
+      color: #818b83;
+      font-size: 0.65rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%) translateY(110%);
+      bottom: 16px;
+      background: rgba(15, 20, 18, 0.95);
+      border: 1px solid var(--line-bright);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: var(--amber);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      z-index: 30;
+      transition: transform 0.28s ease;
+      box-shadow: var(--shadow);
+      max-width: min(90vw, 720px);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 1340px) {
+      .layout {
+        grid-template-columns: minmax(260px, 290px) minmax(0, 1fr);
+      }
+
+      #detailRail {
+        grid-column: 1 / -1;
+        max-height: none;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        width: min(100%, 98vw);
+        margin: 10px auto 20px;
+      }
+
+      .masthead {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .mast-meta {
+        justify-content: flex-start;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .rail,
+      .center {
+        max-height: none;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-row {
+        grid-template-columns: 1fr;
+      }
+
+      .task-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="eft-app">
-    <p class="nojs">Loading EFTRACKER… If nothing appears, please enable JavaScript.</p>
+  <div class="shell">
+    <header class="panel masthead" aria-label="Mission Control">
+      <div>
+        <p class="kicker">Escape From Tarkov // Operational Planner</p>
+        <h1>Command Task Board</h1>
+      </div>
+      <div class="mast-meta">
+        <div class="meta-chip">Operational Time <strong id="clock">--:--:--</strong></div>
+        <div class="meta-chip">Theater <strong>Tarkov AO</strong></div>
+        <div class="meta-chip">Mode <strong>Dark Analog</strong></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel rail" aria-label="Filters and controls">
+        <h2 class="section-title">Filters</h2>
+
+        <div class="stack">
+          <p class="control-label">Search</p>
+          <input id="searchInput" class="input" type="search" placeholder="Search task, map, tag, objective...">
+        </div>
+
+        <div class="stack">
+          <p class="control-label">Task Class</p>
+          <div id="categoryChips" class="chip-row">
+            <button class="chip active" data-filter="category" data-value="all">All</button>
+            <button class="chip" data-filter="category" data-value="trader">Trader</button>
+            <button class="chip" data-filter="category" data-value="storyline">Storyline</button>
+            <button class="chip" data-filter="category" data-value="custom">Custom</button>
+          </div>
+        </div>
+
+        <div class="stack">
+          <p class="control-label">Priority</p>
+          <div id="priorityChips" class="chip-row">
+            <button class="chip active" data-filter="priority" data-value="all">All</button>
+            <button class="chip" data-filter="priority" data-priority="critical" data-value="critical">Critical</button>
+            <button class="chip" data-filter="priority" data-priority="high" data-value="high">High</button>
+            <button class="chip" data-filter="priority" data-priority="medium" data-value="medium">Medium</button>
+            <button class="chip" data-filter="priority" data-priority="low" data-value="low">Low</button>
+          </div>
+        </div>
+
+        <div class="stack">
+          <p class="control-label">Trader</p>
+          <select id="traderSelect" class="select"></select>
+        </div>
+
+        <div class="stack">
+          <p class="control-label">Sort</p>
+          <select id="sortSelect" class="select">
+            <option value="priority">Priority</option>
+            <option value="level">Player Level</option>
+            <option value="progress">Progress</option>
+            <option value="updated">Recently Updated</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
+
+        <div class="toggle-row">
+          <span>Show Completed</span>
+          <button id="showCompletedToggle" class="toggle" data-on="true">On</button>
+        </div>
+
+        <div class="toggle-row">
+          <span>Group by Trader</span>
+          <button id="groupByTraderToggle" class="toggle" data-on="true">On</button>
+        </div>
+
+        <h2 class="section-title">Operations</h2>
+        <div class="btn-row">
+          <button id="newTaskBtn" class="btn">New Task</button>
+          <button id="resetBtn" class="btn warn">Reset Demo</button>
+          <button id="exportBtn" class="btn">Export JSON</button>
+          <button id="importBtn" class="btn">Import JSON</button>
+          <input id="importInput" type="file" accept="application/json" hidden>
+          <button id="clearFiltersBtn" class="btn full">Clear Filters</button>
+        </div>
+
+        <p class="footnote">Data is saved locally in your browser storage. No external backend required.</p>
+      </aside>
+
+      <main class="panel center" aria-label="Task board">
+        <section class="stats" id="stats"></section>
+
+        <section class="toolbar">
+          <input id="quickAddInput" class="input" type="text" placeholder="Quick add task title...">
+          <select id="quickCategory" class="select" aria-label="Quick task category">
+            <option value="trader">Trader</option>
+            <option value="storyline">Storyline</option>
+            <option value="custom">Custom</option>
+          </select>
+          <button id="quickAddBtn" class="btn">Add</button>
+        </section>
+
+        <section id="board" class="board" aria-live="polite"></section>
+      </main>
+
+      <aside id="detailRail" class="panel rail" aria-label="Task detail">
+        <h2 class="section-title">Task Dossier</h2>
+        <section id="detail" class="detail"></section>
+        <h2 class="section-title">Recent Actions</h2>
+        <ul id="timeline" class="timeline"></ul>
+      </aside>
+    </div>
   </div>
-  <noscript>
-    <div class="nojs">EFTRACKER requires JavaScript to load the quest list.</div>
-  </noscript>
+
+  <div id="taskModalBackdrop" class="modal-backdrop" data-open="false" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modalTitle">Create Mission Task</h2>
+        <button id="modalCloseBtn" class="close" aria-label="Close">×</button>
+      </div>
+      <form id="taskForm" class="form">
+        <div>
+          <label class="control-label" for="formTitle">Title</label>
+          <input id="formTitle" class="input" required>
+        </div>
+        <div>
+          <label class="control-label" for="formCategory">Category</label>
+          <select id="formCategory" class="select" required>
+            <option value="trader">Trader</option>
+            <option value="storyline">Storyline</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <label class="control-label" for="formTrader">Trader / Chain</label>
+          <input id="formTrader" class="input" placeholder="Prapor, Therapist, Narrative..." required>
+        </div>
+        <div>
+          <label class="control-label" for="formMap">Map</label>
+          <input id="formMap" class="input" placeholder="Customs, Shoreline, Interchange...">
+        </div>
+        <div>
+          <label class="control-label" for="formLevel">Level Requirement</label>
+          <input id="formLevel" class="input" type="number" min="1" max="79" value="1">
+        </div>
+        <div>
+          <label class="control-label" for="formPriority">Priority</label>
+          <select id="formPriority" class="select">
+            <option value="medium">Medium</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="full">
+          <label class="control-label" for="formDescription">Description</label>
+          <textarea id="formDescription" class="textarea" placeholder="Mission intent, constraints, tactical notes..."></textarea>
+        </div>
+        <div class="full">
+          <label class="control-label" for="formObjectives">Objectives (one per line)</label>
+          <textarea id="formObjectives" class="textarea" placeholder="Locate objective\nExtract with item\nHand over to trader"></textarea>
+        </div>
+        <button type="submit" class="btn">Save Task</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "eft_analog_command_board_v1";
+      const TIMELINE_LIMIT = 12;
+
+      const demoTasks = [
+        {
+          id: "tr-prapor-debut",
+          title: "Debut",
+          category: "trader",
+          trader: "Prapor",
+          map: "Customs",
+          priority: "critical",
+          level: 1,
+          description: "Secure MP-133 shotguns and eliminate Scavs to establish initial supply confidence with Prapor.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Eliminate 5 Scavs on Customs", done: false },
+            { id: crypto.randomUUID(), text: "Hand over 2 MP-133 shotguns", done: false }
+          ],
+          tags: ["early wipe", "combat", "customs"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-therapist-shortage",
+          title: "Shortage",
+          category: "trader",
+          trader: "Therapist",
+          map: "Any",
+          priority: "high",
+          level: 2,
+          description: "Deliver Salewa kits to stabilize medical stock for civilian operations.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Find 3 Salewa first aid kits", done: false },
+            { id: crypto.randomUUID(), text: "Hand over all 3 kits", done: false }
+          ],
+          tags: ["medical", "loot"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-therapist-operation-aquarius-1",
+          title: "Operation Aquarius - Part 1",
+          category: "trader",
+          trader: "Therapist",
+          map: "Dorms",
+          priority: "medium",
+          level: 6,
+          description: "Inspect the water supply situation in the dormitory wing for contamination assessment.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Locate the hidden room in Dorms", done: false },
+            { id: crypto.randomUUID(), text: "Survive and extract", done: false }
+          ],
+          tags: ["dorms", "intel"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-skiersupplier",
+          title: "Supplier",
+          category: "trader",
+          trader: "Skier",
+          map: "Customs",
+          priority: "high",
+          level: 5,
+          description: "Acquire critical armor and secure extraction under pressure for Skier's logistics deal.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Find body armor class 3 or better", done: false },
+            { id: crypto.randomUUID(), text: "Find TOZ-106 shotgun", done: false },
+            { id: crypto.randomUUID(), text: "Hand over required items", done: false }
+          ],
+          tags: ["gear", "turn-in"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-mechanic-gunsmith-1",
+          title: "Gunsmith - Part 1",
+          category: "trader",
+          trader: "Mechanic",
+          map: "Workbench",
+          priority: "critical",
+          level: 2,
+          description: "Deliver compliant MP-133 build matching precise mechanical constraints.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Assemble MP-133 per specification", done: false },
+            { id: crypto.randomUUID(), text: "Hand over assembled weapon", done: false }
+          ],
+          tags: ["modding", "workbench"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-ragman-only-business",
+          title: "Only Business",
+          category: "trader",
+          trader: "Ragman",
+          map: "Interchange",
+          priority: "medium",
+          level: 20,
+          description: "Neutralize hostiles in the shopping complex to assert safe commercial control.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Eliminate PMCs in Interchange", done: false },
+            { id: crypto.randomUUID(), text: "Report mission completion", done: false }
+          ],
+          tags: ["pvp", "interchange"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "tr-jaeger-acquaintance",
+          title: "Acquaintance",
+          category: "trader",
+          trader: "Jaeger",
+          map: "Woods",
+          priority: "high",
+          level: 3,
+          description: "Recover Emelya rye croutons and establish supply contact with Jaeger network.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Find Emelya rye croutons", done: false },
+            { id: crypto.randomUUID(), text: "Hand over to Jaeger", done: false }
+          ],
+          tags: ["woods", "food"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "st-ground-zero-breakthrough",
+          title: "Ground Zero Breakthrough",
+          category: "storyline",
+          trader: "Narrative Command",
+          map: "Ground Zero",
+          priority: "critical",
+          level: 1,
+          description: "Complete first contact objectives in Ground Zero to unlock operational storyline branches.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Enter Ground Zero and locate relay station", done: false },
+            { id: crypto.randomUUID(), text: "Secure encrypted docs", done: false },
+            { id: crypto.randomUUID(), text: "Extract with docs", done: false }
+          ],
+          tags: ["story", "starter"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "st-interrogation-archive",
+          title: "Interrogation Archive",
+          category: "storyline",
+          trader: "Narrative Command",
+          map: "Streets of Tarkov",
+          priority: "high",
+          level: 10,
+          description: "Recover witness archive from abandoned checkpoint to reveal PMCs involved in the blockade.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Reach archive room near car dealership", done: false },
+            { id: crypto.randomUUID(), text: "Decode one terminal log", done: false },
+            { id: crypto.randomUUID(), text: "Extract alive", done: false }
+          ],
+          tags: ["story", "intel", "streets"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "st-shadow-convoy",
+          title: "Shadow Convoy",
+          category: "storyline",
+          trader: "Narrative Command",
+          map: "Shoreline",
+          priority: "medium",
+          level: 18,
+          description: "Track last convoy route and secure proof of external military contractor interference.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Locate 2 convoy markers", done: false },
+            { id: crypto.randomUUID(), text: "Place signal beacon at weather station", done: false },
+            { id: crypto.randomUUID(), text: "Extract through north route", done: false }
+          ],
+          tags: ["story", "shoreline"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "st-lightkeeper-link",
+          title: "Signal To Lightkeeper",
+          category: "storyline",
+          trader: "Narrative Command",
+          map: "Lighthouse",
+          priority: "high",
+          level: 22,
+          description: "Assemble transmitter package and trigger secure sequence to gain access to offshore contact.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Collect military COFDM transmitter", done: false },
+            { id: crypto.randomUUID(), text: "Locate hidden antenna control", done: false },
+            { id: crypto.randomUUID(), text: "Activate sequence and survive", done: false }
+          ],
+          tags: ["story", "lighthouse"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        },
+        {
+          id: "ct-kappa-readiness",
+          title: "Kappa Readiness Sweep",
+          category: "custom",
+          trader: "Operations",
+          map: "Multi-map",
+          priority: "medium",
+          level: 32,
+          description: "Track any remaining blockers before final Kappa objective push.",
+          objectives: [
+            { id: crypto.randomUUID(), text: "Review unfinished trader quest chains", done: false },
+            { id: crypto.randomUUID(), text: "Confirm key inventory check", done: false }
+          ],
+          tags: ["custom", "kappa"],
+          completed: false,
+          updatedAt: new Date().toISOString(),
+          source: "preset"
+        }
+      ];
+
+      const state = {
+        tasks: [],
+        filters: {
+          category: "all",
+          priority: "all",
+          trader: "all",
+          showCompleted: true,
+          query: ""
+        },
+        sort: "priority",
+        groupByTrader: true,
+        selectedTaskId: null,
+        timeline: []
+      };
+
+      const refs = {
+        board: document.getElementById("board"),
+        detail: document.getElementById("detail"),
+        stats: document.getElementById("stats"),
+        timeline: document.getElementById("timeline"),
+        traderSelect: document.getElementById("traderSelect"),
+        sortSelect: document.getElementById("sortSelect"),
+        searchInput: document.getElementById("searchInput"),
+        quickAddInput: document.getElementById("quickAddInput"),
+        quickCategory: document.getElementById("quickCategory"),
+        quickAddBtn: document.getElementById("quickAddBtn"),
+        showCompletedToggle: document.getElementById("showCompletedToggle"),
+        groupByTraderToggle: document.getElementById("groupByTraderToggle"),
+        newTaskBtn: document.getElementById("newTaskBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        exportBtn: document.getElementById("exportBtn"),
+        importBtn: document.getElementById("importBtn"),
+        importInput: document.getElementById("importInput"),
+        clearFiltersBtn: document.getElementById("clearFiltersBtn"),
+        taskModalBackdrop: document.getElementById("taskModalBackdrop"),
+        taskForm: document.getElementById("taskForm"),
+        modalCloseBtn: document.getElementById("modalCloseBtn"),
+        toast: document.getElementById("toast"),
+        clock: document.getElementById("clock")
+      };
+
+      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+
+      function deepClone(obj) {
+        return JSON.parse(JSON.stringify(obj));
+      }
+
+      function nowStamp() {
+        return new Date().toISOString();
+      }
+
+      function readStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch {
+          return null;
+        }
+      }
+
+      function writeStorage() {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              tasks: state.tasks,
+              filters: state.filters,
+              sort: state.sort,
+              groupByTrader: state.groupByTrader,
+              selectedTaskId: state.selectedTaskId,
+              timeline: state.timeline
+            })
+          );
+        } catch {
+          // ignore write failures
+        }
+      }
+
+      function safeTasks(tasks) {
+        if (!Array.isArray(tasks)) return null;
+        const fixed = tasks
+          .filter((task) => task && typeof task === "object" && task.title)
+          .map((task, index) => {
+            const objectives = Array.isArray(task.objectives) && task.objectives.length
+              ? task.objectives.map((obj) => ({
+                  id: obj.id || crypto.randomUUID(),
+                  text: String(obj.text || "Objective"),
+                  done: Boolean(obj.done)
+                }))
+              : [{ id: crypto.randomUUID(), text: "Mission objective", done: false }];
+            return {
+              id: task.id || `restored-${Date.now()}-${index}`,
+              title: String(task.title),
+              category: ["trader", "storyline", "custom"].includes(task.category) ? task.category : "custom",
+              trader: String(task.trader || "Operations"),
+              map: String(task.map || "Any"),
+              priority: ["critical", "high", "medium", "low"].includes(task.priority) ? task.priority : "medium",
+              level: Math.max(1, Number(task.level) || 1),
+              description: String(task.description || "No description"),
+              objectives,
+              tags: Array.isArray(task.tags) ? task.tags.map((tag) => String(tag)) : [],
+              completed: Boolean(task.completed),
+              updatedAt: task.updatedAt || nowStamp(),
+              source: task.source || "import"
+            };
+          });
+
+        return fixed;
+      }
+
+      function initState() {
+        const stored = readStorage();
+
+        if (stored && Array.isArray(stored.tasks) && stored.tasks.length) {
+          const restoredTasks = safeTasks(stored.tasks);
+          if (restoredTasks && restoredTasks.length) {
+            state.tasks = restoredTasks;
+            state.filters = {
+              category: stored.filters?.category || "all",
+              priority: stored.filters?.priority || "all",
+              trader: stored.filters?.trader || "all",
+              showCompleted:
+                typeof stored.filters?.showCompleted === "boolean"
+                  ? stored.filters.showCompleted
+                  : true,
+              query: stored.filters?.query || ""
+            };
+            state.sort = stored.sort || "priority";
+            state.groupByTrader = typeof stored.groupByTrader === "boolean" ? stored.groupByTrader : true;
+            state.selectedTaskId = stored.selectedTaskId || restoredTasks[0].id;
+            state.timeline = Array.isArray(stored.timeline) ? stored.timeline.slice(0, TIMELINE_LIMIT) : [];
+            return;
+          }
+        }
+
+        state.tasks = deepClone(demoTasks);
+        state.selectedTaskId = state.tasks[0]?.id || null;
+        state.timeline = [
+          {
+            id: crypto.randomUUID(),
+            text: "Operational board initialized with demo mission set.",
+            ts: nowStamp()
+          }
+        ];
+      }
+
+      function showToast(message) {
+        refs.toast.textContent = message;
+        refs.toast.classList.add("show");
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => refs.toast.classList.remove("show"), 1900);
+      }
+
+      function addTimeline(text) {
+        state.timeline.unshift({ id: crypto.randomUUID(), text, ts: nowStamp() });
+        state.timeline = state.timeline.slice(0, TIMELINE_LIMIT);
+      }
+
+      function completeProgress(task) {
+        if (!task.objectives.length) return task.completed ? 100 : 0;
+        const doneCount = task.objectives.filter((obj) => obj.done).length;
+        return Math.round((doneCount / task.objectives.length) * 100);
+      }
+
+      function taskMatchesQuery(task, query) {
+        if (!query) return true;
+        const haystack = [
+          task.title,
+          task.trader,
+          task.map,
+          task.description,
+          ...(task.tags || []),
+          ...task.objectives.map((obj) => obj.text)
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query.toLowerCase());
+      }
+
+      function filteredTasks() {
+        let list = state.tasks.filter((task) => {
+          if (state.filters.category !== "all" && task.category !== state.filters.category) return false;
+          if (state.filters.priority !== "all" && task.priority !== state.filters.priority) return false;
+          if (state.filters.trader !== "all" && task.trader !== state.filters.trader) return false;
+          if (!state.filters.showCompleted && task.completed) return false;
+          if (!taskMatchesQuery(task, state.filters.query)) return false;
+          return true;
+        });
+
+        list.sort((a, b) => {
+          if (state.sort === "priority") {
+            const pa = priorityOrder[a.priority] ?? 10;
+            const pb = priorityOrder[b.priority] ?? 10;
+            if (pa !== pb) return pa - pb;
+          }
+          if (state.sort === "level") {
+            if (a.level !== b.level) return a.level - b.level;
+          }
+          if (state.sort === "progress") {
+            const ap = completeProgress(a);
+            const bp = completeProgress(b);
+            if (ap !== bp) return bp - ap;
+          }
+          if (state.sort === "updated") {
+            const ad = new Date(a.updatedAt).getTime();
+            const bd = new Date(b.updatedAt).getTime();
+            if (ad !== bd) return bd - ad;
+          }
+          return a.title.localeCompare(b.title);
+        });
+
+        return list;
+      }
+
+      function groupedTasks(list) {
+        if (!state.groupByTrader) {
+          const byCategory = {
+            Trader: list.filter((task) => task.category === "trader"),
+            Storyline: list.filter((task) => task.category === "storyline"),
+            Custom: list.filter((task) => task.category === "custom")
+          };
+          return Object.entries(byCategory)
+            .filter(([, tasks]) => tasks.length)
+            .map(([name, tasks]) => ({ name, tasks }));
+        }
+
+        const map = new Map();
+        for (const task of list) {
+          const label = task.category === "trader" ? `Trader // ${task.trader}` : `${capitalize(task.category)} // ${task.trader}`;
+          if (!map.has(label)) map.set(label, []);
+          map.get(label).push(task);
+        }
+
+        return [...map.entries()].map(([name, tasks]) => ({ name, tasks }));
+      }
+
+      function capitalize(word) {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      }
+
+      function renderStats(list) {
+        const all = state.tasks;
+        const completed = all.filter((task) => task.completed).length;
+        const traderCompleted = all.filter((task) => task.category === "trader" && task.completed).length;
+        const traderTotal = all.filter((task) => task.category === "trader").length;
+        const storyCompleted = all.filter((task) => task.category === "storyline" && task.completed).length;
+        const storyTotal = all.filter((task) => task.category === "storyline").length;
+        const visible = list.length;
+
+        const cards = [
+          {
+            label: "Mission Load",
+            value: String(all.length),
+            hint: `${visible} visible after filters`
+          },
+          {
+            label: "Completed",
+            value: String(completed),
+            hint: `${Math.round((completed / Math.max(all.length, 1)) * 100)}% campaign done`
+          },
+          {
+            label: "Trader Chain",
+            value: `${traderCompleted}/${traderTotal}`,
+            hint: `${Math.round((traderCompleted / Math.max(traderTotal, 1)) * 100)}% complete`
+          },
+          {
+            label: "Storyline",
+            value: `${storyCompleted}/${storyTotal}`,
+            hint: `${Math.round((storyCompleted / Math.max(storyTotal, 1)) * 100)}% complete`
+          }
+        ];
+
+        refs.stats.innerHTML = cards
+          .map(
+            (card) => `
+              <article class="stat">
+                <p class="label">${escapeHtml(card.label)}</p>
+                <p class="value">${escapeHtml(card.value)}</p>
+                <p class="hint">${escapeHtml(card.hint)}</p>
+              </article>
+            `
+          )
+          .join("");
+      }
+
+      function renderBoard() {
+        const list = filteredTasks();
+        const groups = groupedTasks(list);
+
+        renderStats(list);
+
+        if (!groups.length) {
+          refs.board.innerHTML = '<div class="empty">No missions match current filter envelope.</div>';
+          return;
+        }
+
+        refs.board.innerHTML = groups
+          .map((group) => {
+            const cards = group.tasks
+              .map((task) => {
+                const progress = completeProgress(task);
+                const objectivesDone = task.objectives.filter((obj) => obj.done).length;
+                const pills = [
+                  `<span class="pill">${escapeHtml(task.trader)}</span>`,
+                  `<span class="pill">${escapeHtml(task.map)}</span>`,
+                  `<span class="pill">LVL ${escapeHtml(String(task.level))}</span>`,
+                  `<span class="pill priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>`
+                ].join("");
+
+                return `
+                  <article class="task ${task.completed ? "completed" : ""} ${
+                  state.selectedTaskId === task.id ? "active" : ""
+                }" data-task-id="${escapeHtml(task.id)}">
+                    <div class="task-top">
+                      <span class="status-dot" data-priority="${escapeHtml(task.priority)}"></span>
+                      <h4>${escapeHtml(task.title)}</h4>
+                      <button class="complete-btn" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}" data-done="${task.completed}">
+                        ${task.completed ? "✓" : "○"}
+                      </button>
+                    </div>
+                    <div class="meta">${pills}</div>
+                    <p class="desc">${escapeHtml(task.description)}</p>
+                    <div class="progress">
+                      <div class="top">
+                        <span>Objectives ${objectivesDone}/${task.objectives.length}</span>
+                        <span>${progress}%</span>
+                      </div>
+                      <div class="bar"><span style="width:${progress}%"></span></div>
+                    </div>
+                  </article>
+                `;
+              })
+              .join("");
+
+            return `
+              <section class="group">
+                <div class="group-head">
+                  <h3>${escapeHtml(group.name)}</h3>
+                  <span class="count">${group.tasks.length} tasks</span>
+                </div>
+                <div class="task-grid">${cards}</div>
+              </section>
+            `;
+          })
+          .join("");
+      }
+
+      function renderDetail() {
+        const task = state.tasks.find((item) => item.id === state.selectedTaskId);
+
+        if (!task) {
+          refs.detail.innerHTML = '<div class="empty">Select a mission card to open dossier.</div>';
+          return;
+        }
+
+        const progress = completeProgress(task);
+
+        const objectiveItems = task.objectives
+          .map(
+            (obj) => `
+              <li class="objective ${obj.done ? "done" : ""}">
+                <input type="checkbox" data-action="toggle-objective" data-task-id="${escapeHtml(task.id)}" data-objective-id="${escapeHtml(obj.id)}" ${
+              obj.done ? "checked" : ""
+            }>
+                <span>${escapeHtml(obj.text)}</span>
+              </li>
+            `
+          )
+          .join("");
+
+        const tags = task.tags?.length
+          ? task.tags.map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")
+          : '<span class="pill">No tags</span>';
+
+        refs.detail.innerHTML = `
+          <h3>${escapeHtml(task.title)}</h3>
+          <p class="sub">${escapeHtml(capitalize(task.category))} // ${escapeHtml(task.trader)}</p>
+          <p class="desc">${escapeHtml(task.description)}</p>
+          <div class="meta">
+            <span class="pill">Map: ${escapeHtml(task.map)}</span>
+            <span class="pill">Level ${escapeHtml(String(task.level))}</span>
+            <span class="pill priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
+            <span class="pill">${task.completed ? "Completed" : "In progress"}</span>
+          </div>
+          <div class="progress">
+            <div class="top">
+              <span>Mission Progress</span>
+              <span>${progress}%</span>
+            </div>
+            <div class="bar"><span style="width:${progress}%"></span></div>
+          </div>
+          <p class="tiny">Objectives</p>
+          <ul class="objective-list">${objectiveItems}</ul>
+          <p class="tiny">Tags</p>
+          <div class="meta">${tags}</div>
+          <button class="btn" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}">
+            ${task.completed ? "Mark Active" : "Mark Complete"}
+          </button>
+        `;
+      }
+
+      function renderTimeline() {
+        if (!state.timeline.length) {
+          refs.timeline.innerHTML = '<li><span class="tiny">No recorded actions yet.</span></li>';
+          return;
+        }
+
+        refs.timeline.innerHTML = state.timeline
+          .map((entry) => {
+            const stamp = new Date(entry.ts);
+            const label = stamp.toLocaleString([], {
+              month: "short",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+            return `
+              <li>
+                <time datetime="${escapeHtml(entry.ts)}">${escapeHtml(label)}</time>
+                <span>${escapeHtml(entry.text)}</span>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      function renderTraderSelect() {
+        const traders = [...new Set(state.tasks.map((task) => task.trader))].sort((a, b) => a.localeCompare(b));
+        refs.traderSelect.innerHTML = ['<option value="all">All Traders / Chains</option>']
+          .concat(traders.map((trader) => `<option value="${escapeHtml(trader)}">${escapeHtml(trader)}</option>`))
+          .join("");
+
+        refs.traderSelect.value = traders.includes(state.filters.trader) ? state.filters.trader : "all";
+      }
+
+      function renderFilterUI() {
+        document.querySelectorAll(".chip[data-filter='category']").forEach((chip) => {
+          chip.classList.toggle("active", chip.dataset.value === state.filters.category);
+        });
+
+        document.querySelectorAll(".chip[data-filter='priority']").forEach((chip) => {
+          chip.classList.toggle("active", chip.dataset.value === state.filters.priority);
+        });
+
+        refs.searchInput.value = state.filters.query;
+        refs.sortSelect.value = state.sort;
+        refs.showCompletedToggle.dataset.on = String(state.filters.showCompleted);
+        refs.showCompletedToggle.textContent = state.filters.showCompleted ? "On" : "Off";
+        refs.groupByTraderToggle.dataset.on = String(state.groupByTrader);
+        refs.groupByTraderToggle.textContent = state.groupByTrader ? "On" : "Off";
+      }
+
+      function rerender() {
+        renderTraderSelect();
+        renderFilterUI();
+        renderBoard();
+        renderDetail();
+        renderTimeline();
+        writeStorage();
+      }
+
+      function selectTask(taskId) {
+        if (!state.tasks.some((task) => task.id === taskId)) return;
+        state.selectedTaskId = taskId;
+        rerender();
+      }
+
+      function toggleTask(taskId) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task) return;
+        task.completed = !task.completed;
+        if (task.completed) {
+          task.objectives.forEach((obj) => {
+            obj.done = true;
+          });
+          addTimeline(`Mission completed: ${task.title}`);
+          showToast(`Completed ${task.title}`);
+        } else {
+          addTimeline(`Mission re-opened: ${task.title}`);
+          showToast(`Re-opened ${task.title}`);
+        }
+        task.updatedAt = nowStamp();
+        state.selectedTaskId = taskId;
+        rerender();
+      }
+
+      function toggleObjective(taskId, objectiveId) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task) return;
+        const objective = task.objectives.find((obj) => obj.id === objectiveId);
+        if (!objective) return;
+
+        objective.done = !objective.done;
+        const allDone = task.objectives.every((obj) => obj.done);
+        task.completed = allDone;
+        task.updatedAt = nowStamp();
+
+        addTimeline(
+          `${objective.done ? "Objective complete" : "Objective reopened"}: ${task.title} // ${objective.text}`
+        );
+
+        if (allDone) showToast(`All objectives complete for ${task.title}`);
+        rerender();
+      }
+
+      function clearFilters() {
+        state.filters.category = "all";
+        state.filters.priority = "all";
+        state.filters.trader = "all";
+        state.filters.showCompleted = true;
+        state.filters.query = "";
+        state.sort = "priority";
+        state.groupByTrader = true;
+        showToast("Filters reset");
+        rerender();
+      }
+
+      function openModal() {
+        refs.taskModalBackdrop.dataset.open = "true";
+        const formTitle = document.getElementById("formTitle");
+        formTitle?.focus();
+      }
+
+      function closeModal() {
+        refs.taskModalBackdrop.dataset.open = "false";
+        refs.taskForm.reset();
+      }
+
+      function addTask(taskInput) {
+        const title = taskInput.title?.trim();
+        if (!title) {
+          showToast("Task title is required");
+          return;
+        }
+
+        const objectivesRaw = taskInput.objectivesText
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        const objectives = objectivesRaw.length
+          ? objectivesRaw.map((line) => ({ id: crypto.randomUUID(), text: line, done: false }))
+          : [{ id: crypto.randomUUID(), text: "Complete mission", done: false }];
+
+        const task = {
+          id: `custom-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          title,
+          category: taskInput.category,
+          trader: taskInput.trader?.trim() || "Operations",
+          map: taskInput.map?.trim() || "Any",
+          priority: taskInput.priority,
+          level: Math.max(1, Number(taskInput.level) || 1),
+          description: taskInput.description?.trim() || "No description provided.",
+          objectives,
+          tags: [taskInput.category, "custom"],
+          completed: false,
+          updatedAt: nowStamp(),
+          source: "custom"
+        };
+
+        state.tasks.unshift(task);
+        state.selectedTaskId = task.id;
+        addTimeline(`New mission added: ${task.title}`);
+        showToast(`Added ${task.title}`);
+        rerender();
+      }
+
+      function quickAdd() {
+        const title = refs.quickAddInput.value.trim();
+        if (!title) {
+          showToast("Enter a quick task title first");
+          return;
+        }
+
+        addTask({
+          title,
+          category: refs.quickCategory.value,
+          trader: refs.quickCategory.value === "trader" ? "Unassigned Trader" : "Operations",
+          map: "Any",
+          priority: "medium",
+          level: 1,
+          description: "Quick entry task.",
+          objectivesText: "Complete mission"
+        });
+
+        refs.quickAddInput.value = "";
+      }
+
+      function exportTasks() {
+        const payload = {
+          exportedAt: nowStamp(),
+          source: "eft-command-board",
+          tasks: state.tasks
+        };
+
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `eft_tasks_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        addTimeline("Mission board exported to JSON snapshot.");
+        showToast("Export complete");
+      }
+
+      async function importTasks(file) {
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const taskList = parsed.tasks || parsed;
+          const normalized = safeTasks(taskList);
+
+          if (!normalized || !normalized.length) {
+            showToast("Import failed: no valid task payload");
+            return;
+          }
+
+          state.tasks = normalized;
+          state.selectedTaskId = state.tasks[0]?.id || null;
+          addTimeline(`Imported mission board (${state.tasks.length} tasks).`);
+          showToast(`Imported ${state.tasks.length} tasks`);
+          rerender();
+        } catch {
+          showToast("Import failed: invalid JSON file");
+        }
+      }
+
+      function resetDemo() {
+        if (!window.confirm("Reset the board to default demo tasks?")) return;
+        state.tasks = deepClone(demoTasks);
+        state.filters = {
+          category: "all",
+          priority: "all",
+          trader: "all",
+          showCompleted: true,
+          query: ""
+        };
+        state.sort = "priority";
+        state.groupByTrader = true;
+        state.selectedTaskId = state.tasks[0]?.id || null;
+        state.timeline = [
+          {
+            id: crypto.randomUUID(),
+            text: "Operational board reset to baseline demo dataset.",
+            ts: nowStamp()
+          }
+        ];
+        showToast("Board reset");
+        rerender();
+      }
+
+      function tickClock() {
+        refs.clock.textContent = new Date().toLocaleTimeString([], {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      }
+
+      function bindEvents() {
+        document.querySelectorAll(".chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const filter = chip.dataset.filter;
+            const value = chip.dataset.value;
+            if (!filter || !value) return;
+            state.filters[filter] = value;
+            rerender();
+          });
+        });
+
+        refs.traderSelect.addEventListener("change", () => {
+          state.filters.trader = refs.traderSelect.value;
+          rerender();
+        });
+
+        refs.sortSelect.addEventListener("change", () => {
+          state.sort = refs.sortSelect.value;
+          rerender();
+        });
+
+        refs.searchInput.addEventListener("input", () => {
+          state.filters.query = refs.searchInput.value.trim();
+          rerender();
+        });
+
+        refs.showCompletedToggle.addEventListener("click", () => {
+          state.filters.showCompleted = !state.filters.showCompleted;
+          rerender();
+        });
+
+        refs.groupByTraderToggle.addEventListener("click", () => {
+          state.groupByTrader = !state.groupByTrader;
+          rerender();
+        });
+
+        refs.clearFiltersBtn.addEventListener("click", clearFilters);
+
+        refs.board.addEventListener("click", (event) => {
+          const target = event.target;
+          const taskCard = target.closest(".task");
+          if (!taskCard) return;
+
+          const button = target.closest("[data-action='toggle-task']");
+          if (button) {
+            event.stopPropagation();
+            toggleTask(button.dataset.taskId);
+            return;
+          }
+
+          selectTask(taskCard.dataset.taskId);
+        });
+
+        refs.detail.addEventListener("click", (event) => {
+          const toggleBtn = event.target.closest("[data-action='toggle-task']");
+          if (toggleBtn) {
+            toggleTask(toggleBtn.dataset.taskId);
+          }
+        });
+
+        refs.detail.addEventListener("change", (event) => {
+          const input = event.target;
+          if (!input.matches("[data-action='toggle-objective']")) return;
+          toggleObjective(input.dataset.taskId, input.dataset.objectiveId);
+        });
+
+        refs.newTaskBtn.addEventListener("click", openModal);
+        refs.modalCloseBtn.addEventListener("click", closeModal);
+
+        refs.taskModalBackdrop.addEventListener("click", (event) => {
+          if (event.target === refs.taskModalBackdrop) closeModal();
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && refs.taskModalBackdrop.dataset.open === "true") closeModal();
+        });
+
+        refs.taskForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          addTask({
+            title: document.getElementById("formTitle").value,
+            category: document.getElementById("formCategory").value,
+            trader: document.getElementById("formTrader").value,
+            map: document.getElementById("formMap").value,
+            level: document.getElementById("formLevel").value,
+            priority: document.getElementById("formPriority").value,
+            description: document.getElementById("formDescription").value,
+            objectivesText: document.getElementById("formObjectives").value
+          });
+          closeModal();
+        });
+
+        refs.quickAddBtn.addEventListener("click", quickAdd);
+        refs.quickAddInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            quickAdd();
+          }
+        });
+
+        refs.exportBtn.addEventListener("click", exportTasks);
+
+        refs.importBtn.addEventListener("click", () => {
+          refs.importInput.value = "";
+          refs.importInput.click();
+        });
+
+        refs.importInput.addEventListener("change", () => {
+          const file = refs.importInput.files?.[0];
+          if (file) importTasks(file);
+        });
+
+        refs.resetBtn.addEventListener("click", resetDemo);
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      initState();
+      bindEvents();
+      rerender();
+      tickClock();
+      setInterval(tickClock, 1000);
+    })();
+  </script>
 </body>
 </html>
