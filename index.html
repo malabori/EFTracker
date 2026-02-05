@@ -3,31 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EFTracker Command Edition</title>
-  <meta name="description" content="Escape from Tarkov unified quest tracker with Kappa filtering.">
+  <title>EFTracker Quest Board</title>
+  <meta name="description" content="Escape from Tarkov quest tracker with Kappa filtering and official catalog sync.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #070a09;
-      --bg-2: #0d1311;
-      --surface: rgba(17, 24, 22, 0.92);
-      --surface-2: rgba(13, 18, 16, 0.94);
-      --line: #37453f;
-      --line-strong: #556a61;
-      --text: #d8ded2;
-      --muted: #8f988d;
-      --amber: #d4b87e;
-      --amber-soft: #a98f63;
-      --green: #7f9b68;
-      --blue: #8097a6;
-      --danger: #b86957;
-      --shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
-      --radius: 16px;
-      --radius-sm: 10px;
-      --font-title: "Chakra Petch", "Eurostile", "Bank Gothic", sans-serif;
-      --font-body: "IBM Plex Mono", "Consolas", "Menlo", monospace;
+      --bg: #030603;
+      --bg-soft: #081008;
+      --panel: #101a10;
+      --panel-2: #0b130b;
+      --line: #2d492d;
+      --line-bright: #537253;
+      --text: #c8ddc2;
+      --muted: #82967d;
+      --accent: #9dcf8b;
+      --accent-2: #d7f4ce;
+      --warn: #ccb786;
+      --danger: #d19a8d;
+      --ok: #9fcd8f;
+      --shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+      --radius: 7px;
+      --font-head: "VT323", "Courier New", monospace;
+      --font-body: "Share Tech Mono", "Consolas", monospace;
     }
 
     * {
@@ -38,13 +37,19 @@
     body {
       margin: 0;
       min-height: 100%;
-      color: var(--text);
       background:
-        radial-gradient(130% 120% at 6% -20%, rgba(185, 139, 72, 0.23), transparent 58%),
-        radial-gradient(110% 130% at 100% 120%, rgba(96, 128, 84, 0.22), transparent 52%),
-        linear-gradient(165deg, #060807, #0a0f0d 50%, #090d0c 100%);
+        radial-gradient(130% 90% at 5% -15%, rgba(136, 185, 108, 0.13), transparent 55%),
+        radial-gradient(130% 110% at 105% 120%, rgba(90, 122, 73, 0.1), transparent 58%),
+        linear-gradient(180deg, #040904 0%, #060c06 45%, #030603 100%);
+      color: var(--text);
       font-family: var(--font-body);
-      letter-spacing: 0.01em;
+      letter-spacing: 0.02em;
+    }
+
+    body {
+      padding: 12px;
+      position: relative;
+      overflow-x: hidden;
     }
 
     body::before {
@@ -52,370 +57,394 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgba(212, 184, 126, 0.035) 0,
-          rgba(212, 184, 126, 0.035) 1px,
-          transparent 1px,
-          transparent 74px
-        ),
-        repeating-linear-gradient(
-          0deg,
-          rgba(212, 184, 126, 0.028) 0,
-          rgba(212, 184, 126, 0.028) 1px,
-          transparent 1px,
-          transparent 74px
-        );
-      opacity: 0.45;
       z-index: 0;
+      background-image:
+        linear-gradient(rgba(111, 160, 97, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(111, 160, 97, 0.04) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.26;
     }
 
-    .app {
-      position: relative;
-      z-index: 2;
-      width: min(1480px, 100%);
-      margin: 0 auto;
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .panel {
-      position: relative;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: linear-gradient(165deg, var(--surface), var(--surface-2));
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .panel::before {
-      content: "";
-      position: absolute;
+    .crt-overlay {
+      position: fixed;
       inset: 0;
+      z-index: 9998;
       pointer-events: none;
       background:
-        linear-gradient(120deg, rgba(212, 184, 126, 0.06), transparent 45%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 65%);
+        radial-gradient(circle, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.75) 100%),
+        linear-gradient(rgba(15, 20, 15, 0) 50%, rgba(0, 0, 0, 0.38) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.06));
+      background-size: 100% 100%, 100% 2px, 4px 100%;
+      opacity: 0.97;
     }
 
-    .header {
-      padding: 14px 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
+    .crt-flicker {
+      position: fixed;
+      inset: 0;
+      z-index: 9997;
+      pointer-events: none;
+      background: rgba(250, 255, 250, 0.02);
+      opacity: 0;
+      animation: flicker 1.8s infinite;
     }
 
-    .kicker {
-      margin: 0;
-      color: #8a9388;
-      font-size: 0.6rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
+    @keyframes flicker {
+      0% { opacity: 0.012; }
+      50% { opacity: 0.028; }
+      100% { opacity: 0.012; }
     }
 
-    h1 {
-      margin: 1px 0 0;
-      color: #bcc3b7;
-      font-family: var(--font-title);
-      font-size: clamp(1rem, 2.1vw, 1.4rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      line-height: 1.1;
-      text-shadow: none;
-    }
-
-    .head-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      justify-content: flex-end;
-      align-items: center;
-    }
-
-    .chip {
-      border: 1px solid var(--line-strong);
-      border-radius: 999px;
-      padding: 5px 9px;
-      font-size: 0.59rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #aeb8ac;
-      background: rgba(16, 22, 20, 0.66);
-      white-space: nowrap;
-    }
-
-    .chip strong {
-      color: var(--amber);
-      font-weight: 600;
-    }
-
-    .controls {
-      padding: 12px;
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1460px, 100%);
+      margin: 0 auto;
       display: grid;
       gap: 9px;
     }
 
-    .row {
+    .frame {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(28, 43, 28, 0.85);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(170, 214, 157, 0.06), transparent 42%);
+    }
+
+    .bevel {
+      border: 1px solid #243824;
+      box-shadow:
+        inset 1px 1px 0 rgba(168, 212, 152, 0.14),
+        inset -1px -1px 0 rgba(6, 10, 6, 0.75);
+      border-radius: 6px;
+    }
+
+    .mast {
+      padding: 8px 10px;
       display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
       gap: 8px;
       align-items: center;
     }
 
-    .row.top {
-      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+    .mast-copy {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
     }
 
-    .row.bottom {
-      grid-template-columns: minmax(220px, 320px) auto;
-      justify-content: start;
+    .kicker {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
     }
 
-    .search,
-    .select,
-    .textarea,
-    .input,
-    .btn,
-    .toggle,
-    .filter-btn {
-      font: 500 0.78rem/1.2 var(--font-body);
-      letter-spacing: 0.04em;
+    .title {
+      margin: 0;
+      color: #bdd7b5;
+      font: 500 clamp(1.2rem, 2.2vw, 1.7rem)/1 var(--font-head);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .search,
-    .select,
-    .textarea,
-    .input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(12, 17, 15, 0.9);
-      color: var(--text);
-      padding: 9px 10px;
-    }
-
-    .search::placeholder,
-    .textarea::placeholder,
-    .input::placeholder {
-      color: #69756d;
-    }
-
-    .filter-bar {
-      display: flex;
+    .top-nav {
+      display: inline-flex;
+      gap: 4px;
       flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: #bdd1b7;
+      background: linear-gradient(180deg, #1a291a, #142114);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 4px 9px;
+      font-size: 0.57rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      box-shadow: inset 1px 1px 0 rgba(170, 210, 154, 0.14), inset -1px -1px 0 rgba(6, 10, 6, 0.75);
+    }
+
+    .nav-btn[aria-current="page"],
+    .nav-btn:hover {
+      color: var(--accent-2);
+      border-color: var(--line-bright);
+      background: linear-gradient(180deg, #203420, #162816);
+    }
+
+    .clock-card {
+      padding: 7px;
+      display: grid;
+      gap: 2px;
+      background: rgba(10, 17, 10, 0.88);
+      font-size: 0.59rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .clock-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: #9db098;
+      border-bottom: 1px dotted rgba(83, 113, 83, 0.45);
+      padding-bottom: 2px;
+    }
+
+    .clock-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .clock-row strong {
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .controls {
+      padding: 9px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) minmax(180px, 230px) auto auto auto auto auto;
       gap: 6px;
       align-items: center;
     }
 
-    .filter-btn {
+    .status-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .search,
+    .select,
+    .btn,
+    .toggle {
+      font: 500 0.66rem/1.2 var(--font-body);
+      letter-spacing: 0.04em;
+    }
+
+    .search,
+    .select {
+      width: 100%;
       border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(13, 19, 17, 0.85);
-      color: #bec7bc;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-size: 0.64rem;
-      padding: 6px 10px;
-      cursor: pointer;
-      transition: 0.2s ease;
+      border-radius: 5px;
+      padding: 7px 8px;
+      color: var(--text);
+      background: rgba(9, 15, 9, 0.93);
+      box-shadow: inset 1px 1px 0 rgba(152, 194, 138, 0.13), inset -1px -1px 0 rgba(5, 8, 5, 0.75);
     }
 
-    .filter-btn:hover {
-      border-color: var(--amber-soft);
-      color: var(--amber);
-    }
-
-    .filter-btn.active {
-      border-color: var(--amber);
-      color: var(--amber);
-      background: rgba(64, 54, 34, 0.42);
-      box-shadow: inset 0 0 0 1px rgba(212, 184, 126, 0.18);
+    .search::placeholder {
+      color: #72836f;
     }
 
     .btn,
     .toggle {
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      background: linear-gradient(180deg, #1a2522, #131917);
-      color: #d0d8cc;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 7px 8px;
       text-transform: uppercase;
-      letter-spacing: 0.11em;
-      font-size: 0.64rem;
-      padding: 8px 10px;
+      letter-spacing: 0.08em;
+      color: #c7d8c2;
+      background: linear-gradient(180deg, #1b2c1b, #142314);
       cursor: pointer;
+      box-shadow: inset 1px 1px 0 rgba(173, 215, 157, 0.14), inset -1px -1px 0 rgba(5, 8, 5, 0.75);
       white-space: nowrap;
-      transition: 0.2s ease;
     }
 
     .btn:hover,
     .toggle:hover {
-      border-color: var(--amber-soft);
-      color: var(--amber);
+      border-color: var(--line-bright);
+      color: var(--accent-2);
+    }
+
+    .toggle[data-on="true"] {
+      border-color: #6d9366;
+      color: #daf0d2;
+      background: linear-gradient(180deg, #274126, #1b321b);
     }
 
     .btn.warn {
-      border-color: #7f5c48;
-      color: #dfbd95;
-      background: linear-gradient(180deg, #2a1f19, #1b1410);
+      border-color: #796844;
+      color: #e1cd9f;
+      background: linear-gradient(180deg, #342a18, #261e12);
     }
 
     .btn:disabled,
     .toggle:disabled {
-      opacity: 0.55;
+      opacity: 0.6;
       cursor: not-allowed;
-      border-color: var(--line);
-      color: #98a295;
+      color: #8b9b87;
+      border-color: #334633;
     }
 
-    .toggle[data-on="true"] {
-      border-color: var(--amber);
-      color: var(--amber);
-      background: rgba(66, 56, 35, 0.46);
+    .catalog-box,
+    .kappa-pill {
+      padding: 7px 8px;
+      font-size: 0.57rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(8, 14, 8, 0.84);
+      color: #a6b9a1;
+      white-space: nowrap;
     }
 
-    :focus-visible {
-      outline: 2px solid rgba(212, 184, 126, 0.58);
-      outline-offset: 1px;
+    .catalog-box strong,
+    .kappa-pill strong {
+      color: var(--accent-2);
     }
 
-    .layout {
+    .catalog-box[data-state="error"] strong {
+      color: #e1b0a4;
+    }
+
+    .workspace {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(310px, 360px);
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 370px);
+      gap: 9px;
       min-height: 74vh;
     }
 
-    .board {
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-      align-content: start;
-      max-height: calc(100vh - 210px);
+    .board,
+    .detail {
+      padding: 10px;
+      max-height: calc(100vh - 205px);
       overflow: auto;
       scrollbar-width: thin;
+      display: grid;
+      gap: 8px;
+      align-content: start;
     }
 
     .stats {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+      gap: 6px;
     }
 
     .stat {
+      padding: 7px;
       border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: rgba(13, 19, 17, 0.8);
-      padding: 8px 10px;
+      border-radius: 5px;
+      background: rgba(9, 15, 9, 0.9);
+      box-shadow: inset 1px 1px 0 rgba(166, 207, 151, 0.1), inset -1px -1px 0 rgba(5, 9, 5, 0.72);
+      min-height: 62px;
       display: grid;
       gap: 2px;
-      min-height: 70px;
     }
 
     .stat .label {
       margin: 0;
-      color: var(--muted);
+      color: #83977f;
+      font-size: 0.51rem;
       text-transform: uppercase;
-      letter-spacing: 0.11em;
-      font-size: 0.58rem;
+      letter-spacing: 0.1em;
     }
 
     .stat .value {
       margin: 0;
-      color: var(--amber);
-      font-family: var(--font-title);
-      font-size: 1.3rem;
-      letter-spacing: 0.04em;
-      line-height: 1;
+      color: var(--accent-2);
+      font: 500 1.16rem/1 var(--font-head);
+      letter-spacing: 0.02em;
     }
 
     .stat .sub {
       margin: 0;
-      color: #9aa699;
-      font-size: 0.61rem;
+      color: #90a28c;
+      font-size: 0.55rem;
     }
 
-    .catalog {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: rgba(12, 17, 16, 0.74);
-      padding: 8px 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.62rem;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      color: #afbaae;
-    }
-
-    .catalog strong {
-      color: var(--amber);
-      font-weight: 600;
-    }
-
-    .catalog[data-state="error"] strong {
-      color: #e0a698;
-    }
-
-    .groups {
+    .group-stack {
       display: grid;
-      gap: 10px;
-      align-content: start;
+      gap: 7px;
     }
 
     .group {
       border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
+      border-radius: 6px;
       overflow: hidden;
-      background: rgba(10, 15, 13, 0.74);
+      background: rgba(9, 15, 9, 0.9);
     }
 
     .group-head {
-      padding: 8px 10px;
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(72, 101, 72, 0.6);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      border-bottom: 1px solid rgba(87, 103, 95, 0.55);
-      background: linear-gradient(180deg, rgba(25, 34, 31, 0.78), rgba(15, 21, 19, 0.82));
+      gap: 6px;
+      background: linear-gradient(180deg, rgba(30, 46, 30, 0.85), rgba(17, 29, 17, 0.86));
     }
 
     .group-head h3 {
       margin: 0;
-      color: #dbc895;
-      font-family: var(--font-title);
+      color: #cbdfc5;
+      font: 500 0.8rem/1 var(--font-head);
       text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-size: 0.77rem;
+      letter-spacing: 0.05em;
     }
 
     .group-head span {
-      border: 1px solid var(--line-strong);
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 0.58rem;
+      color: #a5b7a0;
+      font-size: 0.52rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #b2bcae;
+      border: 1px solid var(--line-bright);
+      border-radius: 999px;
+      padding: 2px 6px;
+      background: rgba(13, 21, 13, 0.85);
+    }
+
+    .table-head {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) 118px;
+      gap: 7px;
+      align-items: center;
+      padding: 5px 8px;
+      border-bottom: 1px solid rgba(62, 88, 62, 0.5);
+      font-size: 0.51rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #849883;
+      background: rgba(10, 16, 10, 0.86);
     }
 
     .mission-list {
       display: grid;
-      gap: 0;
     }
 
     .mission {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) minmax(130px, 160px);
-      gap: 8px;
+      grid-template-columns: 30px minmax(0, 1fr) 118px;
+      gap: 7px;
       align-items: center;
-      padding: 8px 10px;
-      border-top: 1px solid rgba(67, 82, 75, 0.45);
+      padding: 6px 8px;
+      border-top: 1px solid rgba(51, 73, 51, 0.52);
       cursor: pointer;
-      transition: background 0.2s ease, border-color 0.2s ease;
+      transition: background 0.15s ease;
     }
 
     .mission:first-child {
@@ -423,53 +452,52 @@
     }
 
     .mission:hover {
-      background: rgba(36, 50, 45, 0.28);
+      background: rgba(40, 60, 40, 0.26);
     }
 
     .mission.active {
-      background: rgba(62, 54, 35, 0.3);
-      box-shadow: inset 2px 0 0 rgba(212, 184, 126, 0.9);
+      background: rgba(60, 88, 60, 0.28);
+      box-shadow: inset 2px 0 0 rgba(168, 209, 153, 0.95);
     }
 
     .mission.completed {
       opacity: 0.8;
     }
 
-    .check {
-      width: 26px;
-      height: 26px;
+    .done-btn {
+      width: 23px;
+      height: 23px;
       border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(15, 21, 19, 0.86);
-      color: #8e998f;
+      border: 1px solid #496349;
+      background: #101910;
+      color: #8ea38a;
       display: grid;
       place-items: center;
+      font-size: 0.7rem;
       cursor: pointer;
-      font-size: 0.78rem;
-      line-height: 1;
+      box-shadow: inset 1px 1px 0 rgba(162, 202, 148, 0.15), inset -1px -1px 0 rgba(4, 8, 4, 0.75);
     }
 
-    .check[data-done="true"] {
-      border-color: var(--green);
-      background: rgba(76, 100, 57, 0.32);
-      color: #d6e4c2;
+    .done-btn[data-done="true"] {
+      border-color: #6f9567;
+      color: #d9f0d1;
+      background: #1e311e;
     }
 
     .mission-main {
-      display: grid;
-      gap: 4px;
       min-width: 0;
+      display: grid;
+      gap: 3px;
     }
 
     .mission-title {
       margin: 0;
-      font-size: 0.74rem;
-      letter-spacing: 0.02em;
-      line-height: 1.3;
-      color: #dbe1d6;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      color: #d3e6ce;
+      font-size: 0.63rem;
+      line-height: 1.35;
       overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .mission-meta {
@@ -479,129 +507,116 @@
     }
 
     .tag {
-      border: 1px solid rgba(86, 102, 94, 0.72);
+      border: 1px solid rgba(82, 109, 82, 0.75);
       border-radius: 999px;
-      padding: 2px 6px;
-      color: #aeb9ad;
-      font-size: 0.56rem;
-      letter-spacing: 0.08em;
+      padding: 1px 6px;
+      font-size: 0.49rem;
       text-transform: uppercase;
-      background: rgba(13, 19, 17, 0.76);
+      letter-spacing: 0.08em;
+      color: #a7b9a2;
+      background: rgba(10, 16, 10, 0.85);
     }
 
     .tag.kappa {
-      border-color: rgba(129, 155, 104, 0.9);
-      color: #d1e0be;
-      background: rgba(57, 75, 39, 0.4);
+      border-color: #6e9565;
+      color: #d8f0d0;
+      background: rgba(34, 56, 34, 0.86);
     }
 
     .mission-progress {
       display: grid;
-      gap: 4px;
+      gap: 3px;
       justify-items: end;
     }
 
     .mission-progress .label {
       margin: 0;
-      font-size: 0.57rem;
-      color: #95a193;
-      letter-spacing: 0.08em;
+      font-size: 0.5rem;
+      color: #8da08a;
       text-transform: uppercase;
-      text-align: right;
+      letter-spacing: 0.08em;
     }
 
     .bar {
       width: 100%;
-      max-width: 130px;
-      border: 1px solid rgba(82, 98, 91, 0.74);
-      border-radius: 999px;
+      max-width: 112px;
       height: 7px;
+      border: 1px solid rgba(79, 104, 79, 0.75);
+      border-radius: 999px;
+      background: #0a110a;
       overflow: hidden;
-      background: #0b100f;
     }
 
-    .bar span {
+    .bar > span {
       display: block;
       height: 100%;
       width: 0;
-      background: linear-gradient(90deg, #728a5e, #d4b87e);
+      background: linear-gradient(90deg, #6f9962, #b6e3a7);
       transition: width 0.2s ease;
     }
 
     .empty {
-      border: 1px dashed rgba(84, 101, 94, 0.84);
-      border-radius: var(--radius-sm);
-      padding: 18px;
+      padding: 15px;
+      border: 1px dashed rgba(75, 102, 75, 0.85);
+      border-radius: 6px;
+      background: rgba(10, 16, 10, 0.85);
       text-align: center;
-      color: var(--muted);
-      font-size: 0.64rem;
+      color: #93a492;
+      font-size: 0.6rem;
       text-transform: uppercase;
-      letter-spacing: 0.11em;
-      background: rgba(11, 16, 15, 0.72);
-    }
-
-    .detail {
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-      align-content: start;
-      max-height: calc(100vh - 210px);
-      overflow: auto;
-      scrollbar-width: thin;
+      letter-spacing: 0.09em;
     }
 
     .detail h2 {
       margin: 0;
-      color: var(--amber);
-      font-family: var(--font-title);
-      font-size: 0.96rem;
+      color: #cfe8c7;
+      font: 500 0.92rem/1.25 var(--font-head);
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      line-height: 1.35;
+      letter-spacing: 0.04em;
     }
 
     .sub {
       margin: 0;
-      color: var(--muted);
+      color: #8ea08a;
+      font-size: 0.55rem;
       text-transform: uppercase;
-      letter-spacing: 0.11em;
-      font-size: 0.58rem;
+      letter-spacing: 0.09em;
     }
 
     .desc {
       margin: 0;
-      color: #b5bfae;
-      font-size: 0.68rem;
-      line-height: 1.5;
+      color: #b5c6b2;
+      font-size: 0.61rem;
+      line-height: 1.52;
     }
 
     .meta-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 4px;
     }
 
     .wiki {
       width: fit-content;
-      color: #bed0e6;
+      color: #b3cfe4;
       text-decoration: none;
-      font-size: 0.61rem;
+      border-bottom: 1px dotted rgba(179, 207, 228, 0.45);
+      font-size: 0.53rem;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
-      border-bottom: 1px dotted rgba(190, 208, 230, 0.45);
+      letter-spacing: 0.08em;
     }
 
     .wiki:hover {
-      color: #d6e6fb;
-      border-bottom-color: rgba(214, 230, 251, 0.8);
+      color: #d0e4f3;
+      border-bottom-color: rgba(208, 228, 243, 0.75);
     }
 
     .label-title {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.58rem;
+      color: #8ea08a;
+      font-size: 0.52rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
     }
 
     .objective-list,
@@ -610,108 +625,79 @@
       margin: 0;
       padding: 0;
       display: grid;
-      gap: 6px;
+      gap: 5px;
     }
 
     .objective {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(14, 20, 18, 0.78);
-      padding: 7px;
+      border-radius: 6px;
+      background: rgba(10, 16, 10, 0.85);
+      padding: 6px;
       display: flex;
       align-items: flex-start;
-      gap: 7px;
-      font-size: 0.68rem;
+      gap: 6px;
+      font-size: 0.6rem;
+      color: #c0d0bc;
       line-height: 1.4;
-      color: #c2ccbe;
     }
 
     .objective input {
       margin-top: 1px;
-      accent-color: var(--amber-soft);
+      accent-color: #87b37a;
     }
 
     .objective.done {
-      border-color: rgba(121, 145, 98, 0.9);
-      color: #9eac99;
+      border-color: #688f60;
+      color: #99ab95;
       text-decoration: line-through;
     }
 
     .activity {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(12, 18, 16, 0.72);
-      padding: 7px;
+      border-radius: 6px;
+      background: rgba(10, 16, 10, 0.84);
+      padding: 6px;
+      font-size: 0.54rem;
+      color: #afbeaa;
       display: grid;
       gap: 2px;
-      color: #afb8ad;
-      font-size: 0.61rem;
       line-height: 1.35;
     }
 
     .activity time {
-      color: #8f9a8d;
-      font-size: 0.55rem;
+      font-size: 0.5rem;
+      color: #8ea08a;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.07em;
     }
 
     .toast {
       position: fixed;
       left: 50%;
-      transform: translateX(-50%) translateY(110%);
-      bottom: 14px;
-      z-index: 10001;
-      border: 1px solid var(--line-strong);
+      transform: translateX(-50%) translateY(120%);
+      bottom: 12px;
+      z-index: 10002;
+      border: 1px solid var(--line-bright);
       border-radius: 999px;
-      background: rgba(13, 19, 17, 0.96);
-      color: var(--amber);
+      background: rgba(12, 19, 12, 0.95);
+      color: var(--accent-2);
+      padding: 8px 11px;
+      font-size: 0.54rem;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-size: 0.62rem;
-      padding: 9px 13px;
-      transition: transform 0.24s ease;
+      letter-spacing: 0.08em;
+      transition: transform 0.2s ease;
       pointer-events: none;
-      max-width: min(92vw, 760px);
-      text-align: center;
       box-shadow: var(--shadow);
+      max-width: min(90vw, 700px);
+      text-align: center;
     }
 
     .toast.show {
       transform: translateX(-50%) translateY(0);
     }
 
-    .crt-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9998;
-      pointer-events: none;
-      background:
-        radial-gradient(circle, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.74) 100%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.085), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.085));
-      background-size: 100% 100%, 100% 2px, 3px 100%;
-      opacity: 0.9;
-    }
-
-    .screen-flicker {
-      position: fixed;
-      inset: 0;
-      z-index: 9997;
-      pointer-events: none;
-      background: rgba(255, 255, 255, 0.012);
-      opacity: 0;
-      animation: flicker 0.36s infinite;
-    }
-
-    @keyframes flicker {
-      0% { opacity: 0.006; }
-      50% { opacity: 0.018; }
-      100% { opacity: 0.006; }
-    }
-
-    @media (max-width: 1280px) {
-      .layout {
+    @media (max-width: 1260px) {
+      .workspace {
         grid-template-columns: 1fr;
       }
 
@@ -725,21 +711,17 @@
       }
     }
 
-    @media (max-width: 1020px) {
-      .app {
-        padding: 10px;
+    @media (max-width: 1040px) {
+      body {
+        padding: 8px;
       }
 
-      .header {
+      .mast {
         grid-template-columns: 1fr;
       }
 
-      .head-meta {
-        justify-content: flex-start;
-      }
-
-      .row.top,
-      .row.bottom {
+      .control-grid,
+      .status-grid {
         grid-template-columns: 1fr;
       }
 
@@ -747,8 +729,9 @@
         grid-template-columns: 1fr;
       }
 
+      .table-head,
       .mission {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: 30px minmax(0, 1fr);
       }
 
       .mission-progress {
@@ -759,75 +742,75 @@
       .bar {
         max-width: none;
       }
-
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="panel header">
-      <div>
-        <p class="kicker">Escape From Tarkov // Unified Quest Tracker</p>
-        <h1>Quest Command Board</h1>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="crt-flicker" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="frame mast">
+      <div class="mast-copy">
+        <p class="kicker">Escape from Tarkov // 90s Mission Control</p>
+        <h1 class="title">Quest Board</h1>
+        <nav class="top-nav" aria-label="Pages">
+          <a class="nav-btn" href="./index.html" aria-current="page">Quest Board</a>
+          <a class="nav-btn" href="./flea.html">Flea Prices</a>
+        </nav>
       </div>
-      <div class="head-meta">
-        <span class="chip">Clock <strong id="clock">--:--:--</strong></span>
-        <span class="chip" id="kappaBadge">Kappa Mode <strong>OFF</strong></span>
+      <div class="clock-card bevel" aria-label="Clocks">
+        <div class="clock-row"><span>IRL Time</span><strong id="clockIrl">--:--:--</strong></div>
+        <div class="clock-row"><span>Tarkov Day</span><strong id="clockDay">--:--:--</strong></div>
+        <div class="clock-row"><span>Tarkov Night</span><strong id="clockNight">--:--:--</strong></div>
       </div>
     </header>
 
-    <section class="panel controls" aria-label="Controls">
-      <div class="row top">
-        <input id="searchInput" class="search" type="search" placeholder="Search task name, trader, objective, map...">
+    <section class="frame controls" aria-label="Controls">
+      <div class="control-grid">
+        <input id="searchInput" class="search" type="search" placeholder="Search quest, trader, map, objective...">
+        <select id="traderSelect" class="select" aria-label="Trader filter"></select>
         <button id="kappaToggle" class="toggle" data-on="false">Kappa Only: Off</button>
         <button id="showCompletedToggle" class="toggle" data-on="true">Show Completed: On</button>
         <button id="syncCatalogBtn" class="btn">Sync Official Catalog</button>
-      </div>
-      <div class="row bottom">
-        <select id="traderSelect" class="select" aria-label="Trader filter"></select>
         <button id="clearFiltersBtn" class="btn warn">Reset View</button>
+        <button id="exportBtn" class="btn">Export JSON</button>
       </div>
+      <div class="status-grid">
+        <div id="catalogStatus" class="catalog-box bevel" data-state="idle">Catalog status: <strong id="catalogStatusText">Idle</strong></div>
+        <div id="kappaBadge" class="kappa-pill bevel">Kappa Mode: <strong>Off</strong></div>
+      </div>
+      <input id="importInput" type="file" accept="application/json" hidden>
+      <button id="importBtn" class="btn" style="display:none;">Import JSON</button>
     </section>
 
-    <section class="layout">
-      <main class="panel board" aria-label="Task board">
+    <main class="workspace">
+      <section class="frame board" aria-label="Quest list">
         <section id="stats" class="stats"></section>
+        <section id="groups" class="group-stack" aria-live="polite"></section>
+      </section>
 
-        <div id="catalogStatus" class="catalog" data-state="idle">
-          <span id="catalogStatusText">Catalog status: <strong>Idle</strong></span>
-          <div class="filter-bar">
-            <button id="exportBtn" class="btn">Export JSON</button>
-            <button id="importBtn" class="btn">Import JSON</button>
-            <input id="importInput" type="file" accept="application/json" hidden>
-          </div>
-        </div>
-
-        <section id="groups" class="groups" aria-live="polite"></section>
-      </main>
-
-      <aside class="panel detail" aria-label="Task detail">
+      <aside class="frame detail" aria-label="Quest detail">
         <section id="detailPane"></section>
         <section>
           <p class="label-title">Recent Activity</p>
           <ul id="activityList" class="activity-list"></ul>
         </section>
       </aside>
-    </section>
+    </main>
   </div>
 
-  <div class="crt-overlay" aria-hidden="true"></div>
-  <div class="screen-flicker" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="./official-catalog-snapshot.js"></script>
   <script>
     (() => {
-      const STORAGE_KEY = "eft_tracker_state_v5";
-      const OFFICIAL_CACHE_KEY = "eft_tracker_official_cache_v2";
+      const STORAGE_KEY = "eft_tracker_state_v7";
+      const OFFICIAL_CACHE_KEY = "eft_tracker_official_cache_v4";
       const OFFICIAL_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
       const OFFICIAL_ENDPOINT = "https://api.tarkov.dev/graphql";
-      const OFFICIAL_QUERY = `query EFTTasks {
-        tasks {
+      const OFFICIAL_QUERY = `query EFTTasks($mode: GameMode) {
+        tasks(gameMode: $mode) {
           id
           name
           kappaRequired
@@ -840,7 +823,7 @@
       const OFFLINE_OFFICIAL_TASKS = Array.isArray(window.EFT_OFFICIAL_SNAPSHOT)
         ? window.EFT_OFFICIAL_SNAPSHOT
         : [];
-      const ACTIVITY_LIMIT = 16;
+      const ACTIVITY_LIMIT = 18;
 
       const MAP_HINTS = [
         "Ground Zero",
@@ -865,12 +848,12 @@
           trader: "Prapor",
           map: "Customs",
           level: 1,
-          description: "Eliminate scavs and hand over MP-133 shotguns for initial trust.",
+          description: "Eliminate Scavs and hand over MP-133 shotguns.",
           objectives: [
             { id: "fallback-debut-1", text: "Eliminate 5 Scavs on Customs", done: false },
             { id: "fallback-debut-2", text: "Hand over 2 MP-133 shotguns", done: false }
           ],
-          tags: ["early", "combat"],
+          tags: ["combat", "turn-in"],
           kappaRequired: true,
           completed: false,
           updatedAt: new Date().toISOString(),
@@ -883,7 +866,7 @@
           trader: "Therapist",
           map: "Any",
           level: 1,
-          description: "Find and deliver Salewa kits to Therapist.",
+          description: "Find and deliver Salewa kits for Therapist.",
           objectives: [
             { id: "fallback-shortage-1", text: "Find 3 Salewa kits", done: false },
             { id: "fallback-shortage-2", text: "Hand over all kits", done: false }
@@ -916,23 +899,25 @@
       };
 
       const refs = {
-        clock: document.getElementById("clock"),
+        clockIrl: document.getElementById("clockIrl"),
+        clockDay: document.getElementById("clockDay"),
+        clockNight: document.getElementById("clockNight"),
         kappaBadge: document.getElementById("kappaBadge"),
         searchInput: document.getElementById("searchInput"),
+        traderSelect: document.getElementById("traderSelect"),
         kappaToggle: document.getElementById("kappaToggle"),
         showCompletedToggle: document.getElementById("showCompletedToggle"),
         syncCatalogBtn: document.getElementById("syncCatalogBtn"),
-        traderSelect: document.getElementById("traderSelect"),
         clearFiltersBtn: document.getElementById("clearFiltersBtn"),
-        stats: document.getElementById("stats"),
-        catalogStatus: document.getElementById("catalogStatus"),
-        catalogStatusText: document.getElementById("catalogStatusText"),
-        groups: document.getElementById("groups"),
-        detailPane: document.getElementById("detailPane"),
-        activityList: document.getElementById("activityList"),
         exportBtn: document.getElementById("exportBtn"),
         importBtn: document.getElementById("importBtn"),
         importInput: document.getElementById("importInput"),
+        catalogStatus: document.getElementById("catalogStatus"),
+        catalogStatusText: document.getElementById("catalogStatusText"),
+        stats: document.getElementById("stats"),
+        groups: document.getElementById("groups"),
+        detailPane: document.getElementById("detailPane"),
+        activityList: document.getElementById("activityList"),
         toast: document.getElementById("toast")
       };
 
@@ -960,7 +945,7 @@
         try {
           localStorage.setItem(key, JSON.stringify(value));
         } catch {
-          // ignore
+          // ignore storage failures
         }
       }
 
@@ -1082,7 +1067,7 @@
         const response = await fetch(OFFICIAL_ENDPOINT, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ query: OFFICIAL_QUERY })
+          body: JSON.stringify({ query: OFFICIAL_QUERY, variables: { mode: "regular" } })
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1120,8 +1105,8 @@
         }
 
         if (announce) {
-          addActivity(`Official catalog synced (${mergedOfficial.length} tasks).`);
-          showToast(`Catalog synced: ${mergedOfficial.length} tasks`);
+          addActivity(`Official catalog synced (${mergedOfficial.length} quests).`);
+          showToast(`Catalog synced: ${mergedOfficial.length} quests`);
         }
       }
 
@@ -1205,7 +1190,7 @@
 
       function updateTraderSelect() {
         const traders = [...new Set(state.tasks.map((task) => task.trader))].sort((a, b) => a.localeCompare(b));
-        refs.traderSelect.innerHTML = ['<option value="all">All Traders / Chains</option>']
+        refs.traderSelect.innerHTML = ['<option value="all">All Traders</option>']
           .concat(traders.map((trader) => `<option value="${escapeHtml(trader)}">${escapeHtml(trader)}</option>`))
           .join("");
 
@@ -1219,18 +1204,18 @@
         const kappaDone = state.tasks.filter((task) => task.kappaRequired && task.completed).length;
 
         const cards = [
-          { label: "Total", value: total, sub: `${visibleTasks.length} visible` },
-          { label: "Completed", value: completed, sub: `${Math.round((completed / Math.max(total, 1)) * 100)}% progress` },
-          { label: "Kappa Tasks", value: kappaTotal, sub: `${state.filters.kappaOnly ? "Kappa filter active" : "Global count"}` },
-          { label: "Kappa Done", value: kappaDone, sub: `${Math.round((kappaDone / Math.max(kappaTotal, 1)) * 100)}% Kappa` }
+          { label: "Total Quests", value: total, sub: `${visibleTasks.length} visible` },
+          { label: "Completed", value: completed, sub: `${Math.round((completed / Math.max(total, 1)) * 100)}%` },
+          { label: "Kappa Required", value: kappaTotal, sub: state.filters.kappaOnly ? "Kappa filter active" : "Global" },
+          { label: "Kappa Done", value: kappaDone, sub: `${Math.round((kappaDone / Math.max(kappaTotal, 1)) * 100)}%` }
         ];
 
         refs.stats.innerHTML = cards
           .map((card) => `
             <article class="stat">
-              <p class="label">${escapeHtml(String(card.label))}</p>
+              <p class="label">${escapeHtml(card.label)}</p>
               <p class="value">${escapeHtml(String(card.value))}</p>
-              <p class="sub">${escapeHtml(String(card.sub))}</p>
+              <p class="sub">${escapeHtml(card.sub)}</p>
             </article>
           `)
           .join("");
@@ -1257,7 +1242,7 @@
         }
 
         refs.catalogStatus.dataset.state = stateLabel;
-        refs.catalogStatusText.innerHTML = `Catalog status: <strong>${escapeHtml(text)}</strong>`;
+        refs.catalogStatusText.textContent = text;
         refs.syncCatalogBtn.disabled = state.sync.loading;
         refs.syncCatalogBtn.textContent = state.sync.loading ? "Syncing..." : "Sync Official Catalog";
       }
@@ -1266,7 +1251,7 @@
         const groups = groupedTasks(visibleTasks);
 
         if (!groups.length) {
-          refs.groups.innerHTML = '<div class="empty">No tasks match the current view.</div>';
+          refs.groups.innerHTML = '<div class="empty">No quests match the current view.</div>';
           return;
         }
 
@@ -1279,18 +1264,17 @@
 
                 return `
                   <article class="mission ${task.completed ? "completed" : ""} ${state.selectedTaskId === task.id ? "active" : ""}" data-task-id="${escapeHtml(task.id)}">
-                    <button class="check" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}" data-done="${task.completed}">${task.completed ? "✓" : "○"}</button>
+                    <button class="done-btn" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}" data-done="${task.completed}">${task.completed ? "✓" : "○"}</button>
                     <div class="mission-main">
                       <h4 class="mission-title">${escapeHtml(task.title)}</h4>
                       <div class="mission-meta">
-                        <span class="tag">${escapeHtml(task.trader)}</span>
                         <span class="tag">${escapeHtml(task.map)}</span>
                         <span class="tag">Lvl ${escapeHtml(String(task.level))}</span>
-                        ${task.kappaRequired ? '<span class="tag kappa">Kappa Required</span>' : ""}
+                        ${task.kappaRequired ? '<span class="tag kappa">Kappa</span>' : ""}
                       </div>
                     </div>
                     <div class="mission-progress">
-                      <p class="label">${doneCount}/${task.objectives.length} objectives</p>
+                      <p class="label">${doneCount}/${task.objectives.length}</p>
                       <div class="bar"><span style="width:${pct}%"></span></div>
                     </div>
                   </article>
@@ -1302,8 +1286,9 @@
               <section class="group">
                 <header class="group-head">
                   <h3>${escapeHtml(group.name)}</h3>
-                  <span>${group.tasks.length} tasks</span>
+                  <span>${group.tasks.length} quests</span>
                 </header>
+                <div class="table-head"><span></span><span>Quest</span><span>Progress</span></div>
                 <div class="mission-list">${rows}</div>
               </section>
             `;
@@ -1315,7 +1300,7 @@
         const task = state.tasks.find((item) => item.id === state.selectedTaskId);
 
         if (!task) {
-          refs.detailPane.innerHTML = '<div class="empty">Select a task to view details.</div>';
+          refs.detailPane.innerHTML = '<div class="empty">Select a quest to view details.</div>';
           return;
         }
 
@@ -1347,7 +1332,7 @@
           </div>
           ${wiki}
           <div class="mission-progress" style="justify-items:start;">
-            <p class="label" style="text-align:left;">Mission progress ${pct}%</p>
+            <p class="label">Mission progress ${pct}%</p>
             <div class="bar" style="max-width:none;"><span style="width:${pct}%"></span></div>
           </div>
           <p class="label-title">Objectives</p>
@@ -1389,7 +1374,7 @@
         refs.showCompletedToggle.dataset.on = String(state.filters.showCompleted);
         refs.showCompletedToggle.textContent = `Show Completed: ${state.filters.showCompleted ? "On" : "Off"}`;
 
-        refs.kappaBadge.innerHTML = `Kappa Mode <strong>${state.filters.kappaOnly ? "ON" : "OFF"}</strong>`;
+        refs.kappaBadge.innerHTML = `Kappa Mode: <strong>${state.filters.kappaOnly ? "On" : "Off"}</strong>`;
       }
 
       function saveState() {
@@ -1426,10 +1411,10 @@
           task.objectives.forEach((objective) => {
             objective.done = true;
           });
-          addActivity(`Task completed: ${task.title}`);
+          addActivity(`Quest completed: ${task.title}`);
           showToast(`Completed ${task.title}`);
         } else {
-          addActivity(`Task reopened: ${task.title}`);
+          addActivity(`Quest reopened: ${task.title}`);
           showToast(`Reopened ${task.title}`);
         }
 
@@ -1457,7 +1442,7 @@
       function exportTasks() {
         const payload = {
           exportedAt: nowIso(),
-          source: "eft-tracker-command-edition",
+          source: "eft-tracker-quest-board",
           tasks: state.tasks
         };
 
@@ -1471,7 +1456,7 @@
         link.remove();
         URL.revokeObjectURL(url);
 
-        addActivity("Exported task board JSON.");
+        addActivity("Exported quest board JSON.");
         showToast("Export complete");
       }
 
@@ -1489,8 +1474,8 @@
 
           state.tasks = imported;
           state.selectedTaskId = imported[0]?.id || null;
-          addActivity(`Imported ${imported.length} tasks.`);
-          showToast(`Imported ${imported.length} tasks`);
+          addActivity(`Imported ${imported.length} quests.`);
+          showToast(`Imported ${imported.length} quests`);
           rerender();
         } catch {
           showToast("Import failed: invalid JSON file");
@@ -1532,18 +1517,38 @@
         state.activity = [{ id: uid(), text: "Board initialized with fallback dataset.", at: nowIso() }];
       }
 
-      function updateClock() {
-        refs.clock.textContent = new Date().toLocaleTimeString([], {
+      function formatHHMMSS(date) {
+        return [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
+          .map((value) => String(value).padStart(2, "0"))
+          .join(":");
+      }
+
+      function getTarkovTime(now, dayCycle) {
+        const dayMs = 24 * 60 * 60 * 1000;
+        const offset = (3 * 60 * 60 * 1000) + (dayCycle ? 0 : 12 * 60 * 60 * 1000);
+        return new Date((offset + 7 * now.getTime()) % dayMs);
+      }
+
+      function tickClocks() {
+        const now = new Date();
+        refs.clockIrl.textContent = now.toLocaleTimeString([], {
           hour12: false,
           hour: "2-digit",
           minute: "2-digit",
           second: "2-digit"
         });
+        refs.clockDay.textContent = formatHHMMSS(getTarkovTime(now, true));
+        refs.clockNight.textContent = formatHHMMSS(getTarkovTime(now, false));
       }
 
       function bindEvents() {
         refs.searchInput.addEventListener("input", () => {
           state.filters.query = refs.searchInput.value.trim();
+          rerender();
+        });
+
+        refs.traderSelect.addEventListener("change", () => {
+          state.filters.trader = refs.traderSelect.value;
           rerender();
         });
 
@@ -1561,11 +1566,8 @@
           syncOfficialCatalog({ forceNetwork: true, announce: true });
         });
 
-        refs.traderSelect.addEventListener("change", () => {
-          state.filters.trader = refs.traderSelect.value;
-          rerender();
-        });
         refs.clearFiltersBtn.addEventListener("click", clearView);
+        refs.exportBtn.addEventListener("click", exportTasks);
 
         refs.groups.addEventListener("click", (event) => {
           const toggleBtn = event.target.closest("[data-action='toggle-task']");
@@ -1575,13 +1577,11 @@
           }
 
           const mission = event.target.closest(".mission");
-          if (mission) {
-            const taskId = mission.dataset.taskId;
-            if (state.tasks.some((task) => task.id === taskId)) {
-              state.selectedTaskId = taskId;
-              rerender();
-            }
-          }
+          if (!mission) return;
+          const taskId = mission.dataset.taskId;
+          if (!state.tasks.some((task) => task.id === taskId)) return;
+          state.selectedTaskId = taskId;
+          rerender();
         });
 
         refs.detailPane.addEventListener("click", (event) => {
@@ -1595,15 +1595,17 @@
           toggleObjective(checkbox.dataset.taskId, checkbox.dataset.objectiveId);
         });
 
-        refs.exportBtn.addEventListener("click", exportTasks);
-        refs.importBtn.addEventListener("click", () => {
-          refs.importInput.value = "";
-          refs.importInput.click();
-        });
-
         refs.importInput.addEventListener("change", () => {
           const file = refs.importInput.files?.[0];
           if (file) importTasks(file);
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "o") {
+            event.preventDefault();
+            refs.importInput.value = "";
+            refs.importInput.click();
+          }
         });
       }
 
@@ -1619,11 +1621,11 @@
       async function init() {
         hydrate();
         bindEvents();
-        updateClock();
-        setInterval(updateClock, 1000);
+        tickClocks();
+        setInterval(tickClocks, 1000);
 
-        const hasLargeOfficial = state.tasks.filter((task) => task.source === "official").length > 100;
-        if (!hasLargeOfficial && OFFLINE_OFFICIAL_TASKS.length > 100) {
+        const existingOfficial = state.tasks.filter((task) => task.source === "official").length;
+        if (existingOfficial < 120 && OFFLINE_OFFICIAL_TASKS.length > 120) {
           applyOfficialCatalog(OFFLINE_OFFICIAL_TASKS, { announce: false });
           state.sync.lastSync = nowIso();
           state.sync.error = "";
@@ -1633,21 +1635,11 @@
             showCompleted: true,
             kappaOnly: false
           };
-          addActivity(`Offline official snapshot loaded (${OFFLINE_OFFICIAL_TASKS.length} tasks).`);
-        }
-
-        if (state.tasks.length > 100 && filteredTasks().length === 0) {
-          state.filters = {
-            query: "",
-            trader: "all",
-            showCompleted: true,
-            kappaOnly: false
-          };
-          addActivity("View filters auto-reset to reveal full catalog.");
+          addActivity(`Offline official snapshot loaded (${OFFLINE_OFFICIAL_TASKS.length} quests).`);
         }
 
         rerender();
-        await syncOfficialCatalog({ forceNetwork: !hasLargeOfficial, announce: false });
+        await syncOfficialCatalog({ forceNetwork: existingOfficial < 120, announce: false });
       }
 
       init();
