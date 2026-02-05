@@ -53,6 +53,7 @@ const state = {
   extended: false,
   done: readJsonLocalStorage('eft-task-progress-stable', {}),
   traderFilter: 'ALL',
+  typeFilter: 'ALL',
   kappaOnly: false,
   showCompleted: true,
   search: '',
@@ -305,7 +306,9 @@ function stats() {
   const kAll = state.tasks.filter(t => t.kappaRequired).length;
   const kDone = state.tasks.filter(t => t.kappaRequired && state.done[t.id]).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-  return { total, done, kAll, kDone, pct };
+  const traderTotal = state.tasks.filter(t => taskCategory(t) === 'TRADER').length;
+  const storyTotal = state.tasks.filter(t => taskCategory(t) === 'STORY').length;
+  return { total, done, kAll, kDone, pct, traderTotal, storyTotal };
 }
 
 function escReg(s) {
@@ -318,12 +321,19 @@ function hi(text, q) {
   return text.replace(r, '<mark class="eft-hit">$1</mark>');
 }
 
+function taskCategory(task) {
+  const type = (task.type || '').toLowerCase();
+  if (type.includes('story')) return 'STORY';
+  return 'TRADER';
+}
+
 function groups() {
   const q = state.search.trim().toLowerCase();
   const map = new Map();
   for (const t of state.tasks) {
     const trader = t.trader?.name || 'Unknown';
     if (state.traderFilter !== 'ALL' && state.traderFilter !== trader) continue;
+    if (state.typeFilter !== 'ALL' && state.typeFilter !== taskCategory(t)) continue;
     if (state.kappaOnly && !t.kappaRequired) continue;
     if (!state.showCompleted && state.done[t.id]) continue;
 
@@ -494,7 +504,29 @@ function render() {
   const s = stats();
   refs.app.innerHTML = '';
 
-  const hero = el('div', { class: 'hero' }, el('h1', {}, 'EFTRACKER'), el('div', { class: 'sub' }, 'TASK TRACKER SYSTEM v1.0'));
+  const hero = el(
+    'div',
+    { class: 'hero' },
+    el(
+      'div',
+      { class: 'hero-top' },
+      el('div', { class: 'hero-brand' }, el('h1', {}, 'EFTRACKER'), el('div', { class: 'sub' }, 'TRADER + STORYLINE TASK SYSTEM')),
+      el(
+        'div',
+        { class: 'hero-lights' },
+        el('span', { class: 'signal live' }, 'Live'),
+        el('span', { class: 'signal warm' }, 'Warm'),
+        el('span', { class: 'signal stealth' }, 'Stealth')
+      )
+    ),
+    el(
+      'div',
+      { class: 'hero-meta' },
+      el('div', { class: 'hero-line' }, 'OPS GRID', el('span', { class: 'hero-code' }, '1993-A')),
+      el('div', { class: 'hero-line' }, 'SESSION', el('span', { class: 'hero-code' }, 'NIGHTWATCH')),
+      el('div', { class: 'hero-line' }, 'DATA LINK', el('span', { class: 'hero-code' }, 'TARKOV.DEV'))
+    )
+  );
 
   const err = state.error
     ? el(
@@ -512,8 +544,22 @@ function render() {
     { class: 'stats', id: 'eft-stats' },
     el('div', { class: 'stat' }, el('div', { class: 'num' }, String(s.done)), el('div', { class: 'lbl' }, 'COMPLETED')),
     el('div', { class: 'stat' }, el('div', { class: 'num' }, String(s.total)), el('div', { class: 'lbl' }, 'TOTAL TASKS')),
+    el('div', { class: 'stat' }, el('div', { class: 'num' }, `${s.traderTotal}/${s.storyTotal}`), el('div', { class: 'lbl' }, 'TRADER / STORY')),
     el('div', { class: 'stat' }, el('div', { class: 'num' }, `${s.kDone}/${s.kAll}`), el('div', { class: 'lbl' }, 'KAPPA PROGRESS')),
     el('div', { class: 'stat' }, el('div', { class: 'num' }, `${s.pct}%`), el('div', { class: 'lbl' }, 'COMPLETION'))
+  );
+
+  const intelStrip = el(
+    'div',
+    { class: 'intel-strip' },
+    el('div', { class: 'intel-left' }, el('span', { class: 'intel-tag' }, 'MODE: TACTICAL DARK'), el('span', { class: 'intel-tag' }, 'CACHE: 12H')),
+    el(
+      'div',
+      { class: 'intel-right' },
+      el('span', { class: 'legend' }, 'Legend'),
+      el('span', { class: 'legend-pill kappa' }, 'Kappa'),
+      el('span', { class: 'legend-pill defunct' }, 'Defunct')
+    )
   );
 
   const allNames = [...new Set(state.tasks.map(t => t.trader?.name || 'Unknown'))];
@@ -524,6 +570,31 @@ function render() {
   const sel = el('select', { id: traderSelectId, onchange: e => { state.traderFilter = e.target.value; renderColumnsOnly(); } });
   dropdown.forEach(name => sel.append(el('option', { value: name, selected: state.traderFilter === name }, name === 'ALL' ? 'ALL TRADERS' : name)));
   const traderLabel = el('label', { for: traderSelectId, class: 'bar-label' }, 'Trader:');
+
+  const typeOptions = [
+    { label: 'All tasks', value: 'ALL' },
+    { label: 'Trader tasks', value: 'TRADER' },
+    { label: 'Storyline', value: 'STORY' }
+  ];
+  const typeGroup = el('div', { class: 'type-group' });
+  typeOptions.forEach(opt => {
+    typeGroup.append(
+      el(
+        'button',
+        {
+          class: 'type-btn' + (state.typeFilter === opt.value ? ' active' : ''),
+          type: 'button',
+          'aria-pressed': state.typeFilter === opt.value ? 'true' : 'false',
+          onclick: () => {
+            state.typeFilter = opt.value;
+            renderColumnsOnly();
+          }
+        },
+        opt.label
+      )
+    );
+  });
+  const typeLabel = el('div', { class: 'bar-label' }, 'Task type:');
 
   const kappaOnly = el('label', {}, el('input', { type: 'checkbox', checked: state.kappaOnly, onchange: e => { state.kappaOnly = e.target.checked; renderColumnsOnly(); } }), ' Kappa only');
   const showCompleted = el('label', {}, el('input', { type: 'checkbox', checked: state.showCompleted, onchange: e => { state.showCompleted = e.target.checked; renderColumnsOnly(); } }), ' Show completed');
@@ -584,11 +655,23 @@ function render() {
     'Collapse all'
   );
 
-  const bar = el('div', { class: 'bar', id: 'eft-bar' }, traderLabel, sel, kappaOnly, showCompleted, searchBox, reset, collapseAll);
+  const bar = el(
+    'div',
+    { class: 'bar', id: 'eft-bar' },
+    traderLabel,
+    sel,
+    typeLabel,
+    typeGroup,
+    kappaOnly,
+    showCompleted,
+    searchBox,
+    reset,
+    collapseAll
+  );
 
   const cols = el('div', { class: 'columns' }, el('div', { class: 'col', id: 'eft-col-L' }), el('div', { class: 'col', id: 'eft-col-R' }));
 
-  refs.app.append(hero, err || document.createComment('noerr'), statsRow, bar, cols);
+  refs.app.append(hero, err || document.createComment('noerr'), statsRow, intelStrip, bar, cols);
 
   if (state.loading) {
     const L = document.getElementById('eft-col-L');

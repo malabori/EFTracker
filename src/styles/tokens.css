@@ -2,18 +2,20 @@
   :root {
     --mainW: 1100px;
     --gap: 24px;
-    --panel: #121416;
-    --soft: #0e1012;
-    --line: #252a2f;
+    --panel: #141210;
+    --soft: #0d0f10;
+    --line: #2a2a28;
     --gold: #d6b986;
     --gold-2: #a7895f;
-    --text: #d0d6dc;
-    --muted: #8f98a2;
+    --text: #d4d2cc;
+    --muted: #8f8a83;
+    --olive: #8fa57f;
+    --amber: #c9a354;
     --danger: #d85e5e;
     --danger-2: #8f2f2f;
     --r: 14px;
     --rsm: 10px;
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+    --shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
   }
 
   @media (max-width: 1600px) {
