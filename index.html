@@ -78,8 +78,8 @@
       inset: 0;
       pointer-events: none;
       background:
-        linear-gradient(120deg, rgba(210, 180, 118, 0.08), transparent 40%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 55%);
+        linear-gradient(120deg, rgba(210, 180, 118, 0.045), transparent 45%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 55%);
     }
 
     .head {
@@ -393,7 +393,7 @@
 
     .task-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+      grid-template-columns: 1fr;
       gap: 8px;
       padding: 8px;
     }
@@ -401,10 +401,10 @@
     .task {
       border: 1px solid rgba(77, 95, 86, 0.62);
       border-radius: 10px;
-      background: linear-gradient(180deg, rgba(18, 24, 22, 0.92), rgba(12, 16, 15, 0.93));
-      padding: 9px;
+      background: linear-gradient(180deg, rgba(18, 24, 22, 0.8), rgba(12, 16, 15, 0.82));
+      padding: 8px 9px;
       display: grid;
-      gap: 7px;
+      gap: 6px;
       cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
@@ -446,7 +446,7 @@
 
     .task h4 {
       margin: 0;
-      font-size: 0.77rem;
+      font-size: 0.75rem;
       line-height: 1.35;
       letter-spacing: 0.03em;
       color: #dbe1d6;
@@ -482,7 +482,7 @@
       border-radius: 999px;
       padding: 3px 7px;
       color: #afbaae;
-      font-size: 0.6rem;
+      font-size: 0.57rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       background: rgba(15, 21, 19, 0.72);
@@ -496,9 +496,9 @@
     .desc {
       margin: 0;
       color: #b2bcae;
-      font-size: 0.69rem;
+      font-size: 0.67rem;
       line-height: 1.45;
-      min-height: 2.65em;
+      min-height: 0;
     }
 
     .progress {
@@ -757,9 +757,9 @@
       height: 100vh;
       z-index: 9998;
       background:
-        radial-gradient(circle, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.68) 100%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.24) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        radial-gradient(circle, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.52) 100%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.17) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.045), rgba(0, 255, 0, 0.018), rgba(0, 0, 255, 0.045));
       background-size: 100% 100%, 100% 2px, 3px 100%;
       pointer-events: none;
     }
@@ -771,10 +771,10 @@
       width: 100vw;
       height: 100vh;
       z-index: 9997;
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.015);
       opacity: 0;
       pointer-events: none;
-      animation: flicker 0.15s infinite;
+      animation: flicker 0.18s infinite;
     }
 
     @keyframes flicker {
@@ -843,7 +843,6 @@
       </div>
       <div class="head-right">
         <span class="badge">Clock <strong id="clock">--:--:--</strong></span>
-        <span class="badge">Theme <strong>Analog Dark</strong></span>
       </div>
     </header>
 
@@ -969,6 +968,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="./official-catalog-snapshot.js"></script>
   <script>
     (() => {
       const STORAGE_KEY = "eft_tracker_state_v4";
@@ -979,7 +979,6 @@
         tasks {
           id
           name
-          type
           kappaRequired
           wikiLink
           minPlayerLevel
@@ -987,6 +986,9 @@
           objectives { id description }
         }
       }`;
+      const OFFLINE_OFFICIAL_TASKS = Array.isArray(window.EFT_OFFICIAL_SNAPSHOT)
+        ? window.EFT_OFFICIAL_SNAPSHOT
+        : [];
       const ACTIVITY_LIMIT = 14;
 
       const MAP_HINTS = [
@@ -1237,10 +1239,10 @@
       }
 
       function inferCategory(rawTask, traderName) {
-        const type = String(rawTask?.type || "").toLowerCase();
         const trader = String(traderName || "").toLowerCase();
+        const title = String(rawTask?.name || "").toLowerCase();
 
-        if (type.includes("story")) return "storyline";
+        if (title.includes("broadcast") || title.includes("house arrest")) return "storyline";
         if (trader.includes("lightkeeper") || trader.includes("ref")) return "storyline";
         if (!traderName) return "storyline";
         return "trader";
@@ -1283,7 +1285,6 @@
         const priority = inferPriority(rawTask);
         const tags = [category, traderName.toLowerCase().replace(/\s+/g, "-")];
         if (rawTask?.kappaRequired) tags.push("kappa");
-        if (rawTask?.type) tags.push(String(rawTask.type).toLowerCase());
 
         return {
           id: `official:${id}`,
@@ -1414,9 +1415,17 @@
 
           applyOfficialCatalog(officialRaw, { announce });
         } catch (error) {
-          state.sync.error = "Catalog unavailable, using local dataset";
-          if (announce) {
-            showToast("Catalog sync failed, local data retained");
+          const hasOfflineSnapshot = Array.isArray(OFFLINE_OFFICIAL_TASKS) && OFFLINE_OFFICIAL_TASKS.length > 0;
+          if (hasOfflineSnapshot) {
+            applyOfficialCatalog(OFFLINE_OFFICIAL_TASKS, { announce: false });
+            state.sync.lastSync = state.sync.lastSync || nowIso();
+            state.sync.error = "Live sync unavailable, loaded offline official snapshot";
+            if (announce) showToast("Live sync unavailable, loaded offline official snapshot");
+          } else {
+            state.sync.error = "Catalog unavailable, using local dataset";
+            if (announce) {
+              showToast("Catalog sync failed, local data retained");
+            }
           }
         } finally {
           state.sync.loading = false;
@@ -1592,9 +1601,6 @@
               .map((task) => {
                 const doneCount = task.objectives.filter((objective) => objective.done).length;
                 const progress = getProgress(task);
-                const description = task.description.length > 150
-                  ? `${task.description.slice(0, 147)}...`
-                  : task.description;
 
                 return `
                   <article class="task ${task.completed ? "completed" : ""} ${
@@ -1613,7 +1619,6 @@
                       <span class="pill">LVL ${escapeHtml(String(task.level))}</span>
                       <span class="pill priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
                     </div>
-                    <p class="desc">${escapeHtml(description)}</p>
                     <div class="progress">
                       <div class="progress-head">
                         <span>${doneCount}/${task.objectives.length} objectives</span>
@@ -2098,9 +2103,36 @@
         bindEvents();
         updateClock();
         setInterval(updateClock, 1000);
+        const hasLargeCatalog = state.tasks.filter((task) => task.source === "official").length > 100;
+        if (!hasLargeCatalog && OFFLINE_OFFICIAL_TASKS.length > 100) {
+          applyOfficialCatalog(OFFLINE_OFFICIAL_TASKS, { announce: false });
+          state.sync.lastSync = nowIso();
+          state.sync.error = "";
+          state.filters = {
+            query: "",
+            category: "all",
+            priority: "all",
+            trader: "all",
+            showCompleted: true
+          };
+          state.sort = "priority";
+          state.groupByTrader = true;
+          addActivity(`Offline official snapshot loaded (${OFFLINE_OFFICIAL_TASKS.length} tasks).`);
+        }
+        if (state.tasks.length > 100 && filteredTasks().length === 0) {
+          state.filters = {
+            query: "",
+            category: "all",
+            priority: "all",
+            trader: "all",
+            showCompleted: true
+          };
+          state.sort = "priority";
+          state.groupByTrader = true;
+          addActivity("Filters auto-reset to show full catalog.");
+        }
         rerender();
 
-        const hasLargeCatalog = state.tasks.filter((task) => task.source === "official").length > 100;
         await syncOfficialCatalog({ forceNetwork: !hasLargeCatalog, announce: false });
       }
 
