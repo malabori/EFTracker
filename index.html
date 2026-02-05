@@ -3,34 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EFTracker Tactical Board</title>
-  <meta name="description" content="Escape from Tarkov trader and storyline task tracker.">
+  <title>EFTracker Command Edition</title>
+  <meta name="description" content="Escape from Tarkov trader and storyline tracker with Kappa filtering.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0e0d;
-      --bg-soft: #101715;
-      --panel: rgba(17, 24, 22, 0.9);
-      --panel-2: rgba(15, 20, 19, 0.9);
-      --line: #33423d;
-      --line-bright: #4f655d;
-      --text: #d7ddd1;
-      --muted: #8f998e;
-      --amber: #d2b476;
-      --amber-soft: #a88f62;
-      --green: #6f8159;
-      --green-soft: #3d4b32;
-      --critical: #a45b49;
-      --high: #a17a47;
-      --medium: #77854f;
-      --low: #5d747a;
-      --shadow: 0 22px 45px rgba(0, 0, 0, 0.45);
-      --radius: 14px;
+      --bg: #070a09;
+      --bg-2: #0d1311;
+      --surface: rgba(17, 24, 22, 0.92);
+      --surface-2: rgba(13, 18, 16, 0.94);
+      --line: #37453f;
+      --line-strong: #556a61;
+      --text: #d8ded2;
+      --muted: #8f988d;
+      --amber: #d4b87e;
+      --amber-soft: #a98f63;
+      --green: #7f9b68;
+      --blue: #8097a6;
+      --danger: #b86957;
+      --shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
+      --radius: 16px;
       --radius-sm: 10px;
-      --font-ui: "Chakra Petch", "Agency FB", "Eurostile", sans-serif;
-      --font-mono: "IBM Plex Mono", "Consolas", "Menlo", monospace;
+      --font-title: "Chakra Petch", "Eurostile", "Bank Gothic", sans-serif;
+      --font-body: "IBM Plex Mono", "Consolas", "Menlo", monospace;
     }
 
     * {
@@ -43,33 +40,54 @@
       min-height: 100%;
       color: var(--text);
       background:
-        radial-gradient(120% 120% at 8% -15%, rgba(171, 127, 65, 0.2), transparent 55%),
-        radial-gradient(120% 120% at 95% 120%, rgba(95, 120, 76, 0.22), transparent 50%),
-        linear-gradient(165deg, #080a0a, #0a0e0d 45%, #090d0c 100%);
-      font-family: var(--font-mono);
+        radial-gradient(130% 120% at 6% -20%, rgba(185, 139, 72, 0.23), transparent 58%),
+        radial-gradient(110% 130% at 100% 120%, rgba(96, 128, 84, 0.22), transparent 52%),
+        linear-gradient(165deg, #060807, #0a0f0d 50%, #090d0c 100%);
+      font-family: var(--font-body);
       letter-spacing: 0.01em;
     }
 
-    body {
-      padding: 16px;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(212, 184, 126, 0.035) 0,
+          rgba(212, 184, 126, 0.035) 1px,
+          transparent 1px,
+          transparent 74px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          rgba(212, 184, 126, 0.028) 0,
+          rgba(212, 184, 126, 0.028) 1px,
+          transparent 1px,
+          transparent 74px
+        );
+      opacity: 0.45;
+      z-index: 0;
     }
 
     .app {
       position: relative;
       z-index: 2;
-      width: min(1450px, 100%);
+      width: min(1480px, 100%);
       margin: 0 auto;
+      padding: 14px;
       display: grid;
       gap: 12px;
     }
 
     .panel {
+      position: relative;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: linear-gradient(165deg, var(--panel), var(--panel-2));
+      background: linear-gradient(165deg, var(--surface), var(--surface-2));
       box-shadow: var(--shadow);
       overflow: hidden;
-      position: relative;
     }
 
     .panel::before {
@@ -78,11 +96,11 @@
       inset: 0;
       pointer-events: none;
       background:
-        linear-gradient(120deg, rgba(210, 180, 118, 0.045), transparent 45%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 55%);
+        linear-gradient(120deg, rgba(212, 184, 126, 0.06), transparent 45%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 65%);
     }
 
-    .head {
+    .header {
       padding: 14px 16px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -90,143 +108,140 @@
       align-items: center;
     }
 
-    .head h1 {
-      margin: 0;
-      color: var(--amber);
-      font-family: var(--font-ui);
-      font-size: clamp(1.2rem, 2.6vw, 1.8rem);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-shadow: 0 0 10px rgba(210, 180, 118, 0.2);
-    }
-
     .kicker {
       margin: 0;
       color: var(--muted);
-      font-size: 0.68rem;
-      letter-spacing: 0.19em;
+      font-size: 0.66rem;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
     }
 
-    .head-right {
+    h1 {
+      margin: 2px 0 0;
+      color: var(--amber);
+      font-family: var(--font-title);
+      font-size: clamp(1.15rem, 2.6vw, 1.8rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      text-shadow: 0 0 10px rgba(212, 184, 126, 0.2);
+    }
+
+    .head-meta {
       display: flex;
-      gap: 7px;
       flex-wrap: wrap;
+      gap: 6px;
       justify-content: flex-end;
       align-items: center;
     }
 
-    .badge {
-      border: 1px solid var(--line-bright);
+    .chip {
+      border: 1px solid var(--line-strong);
       border-radius: 999px;
       padding: 6px 10px;
-      font-size: 0.67rem;
+      font-size: 0.63rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #c0c8bc;
-      background: rgba(14, 20, 18, 0.75);
+      color: #bac4b8;
+      background: rgba(16, 22, 20, 0.76);
       white-space: nowrap;
     }
 
-    .badge strong {
+    .chip strong {
       color: var(--amber);
       font-weight: 600;
     }
 
-    .control {
-      padding: 12px 14px;
+    .controls {
+      padding: 12px;
       display: grid;
-      gap: 10px;
+      gap: 9px;
     }
 
-    .control-row {
+    .row {
       display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
       gap: 8px;
       align-items: center;
     }
 
-    .control-row.secondary {
-      grid-template-columns: minmax(0, 1fr) minmax(140px, 170px) minmax(140px, 170px) auto auto auto;
+    .row.top {
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
     }
 
-    .input,
+    .row.bottom {
+      grid-template-columns: minmax(0, 1fr) minmax(170px, 210px) minmax(170px, 210px) minmax(170px, 210px) auto auto;
+    }
+
+    .search,
     .select,
     .textarea,
+    .input,
     .btn,
-    .chip,
-    .toggle {
-      font: 500 0.8rem/1.2 var(--font-mono);
+    .toggle,
+    .filter-btn {
+      font: 500 0.78rem/1.2 var(--font-body);
       letter-spacing: 0.04em;
     }
 
-    .input,
+    .search,
     .select,
-    .textarea {
+    .textarea,
+    .input {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(13, 18, 17, 0.88);
+      background: rgba(12, 17, 15, 0.9);
       color: var(--text);
       padding: 9px 10px;
     }
 
-    .textarea {
-      min-height: 92px;
-      resize: vertical;
+    .search::placeholder,
+    .textarea::placeholder,
+    .input::placeholder {
+      color: #69756d;
     }
 
-    .input::placeholder,
-    .textarea::placeholder {
-      color: #6d756f;
-    }
-
-    .chip-row {
-      display: inline-flex;
-      gap: 6px;
+    .filter-bar {
+      display: flex;
       flex-wrap: wrap;
+      gap: 6px;
       align-items: center;
     }
 
-    .chip {
+    .filter-btn {
       border: 1px solid var(--line);
-      background: rgba(15, 20, 18, 0.85);
-      color: #bcc5b9;
       border-radius: 999px;
-      padding: 6px 10px;
+      background: rgba(13, 19, 17, 0.85);
+      color: #bec7bc;
       text-transform: uppercase;
-      font-size: 0.66rem;
-      letter-spacing: 0.11em;
+      letter-spacing: 0.1em;
+      font-size: 0.64rem;
+      padding: 6px 10px;
       cursor: pointer;
       transition: 0.2s ease;
     }
 
-    .chip:hover {
+    .filter-btn:hover {
       border-color: var(--amber-soft);
       color: var(--amber);
     }
 
-    .chip.active {
+    .filter-btn.active {
       border-color: var(--amber);
       color: var(--amber);
-      background: rgba(67, 56, 35, 0.42);
-      box-shadow: inset 0 0 0 1px rgba(210, 180, 118, 0.18);
+      background: rgba(64, 54, 34, 0.42);
+      box-shadow: inset 0 0 0 1px rgba(212, 184, 126, 0.18);
     }
-
-    .chip[data-priority="critical"].active { border-color: var(--critical); color: #e7b0a5; background: rgba(89, 41, 34, 0.4); }
-    .chip[data-priority="high"].active { border-color: var(--high); color: #e1bf8f; background: rgba(87, 64, 34, 0.38); }
-    .chip[data-priority="medium"].active { border-color: var(--medium); color: #d0dca6; background: rgba(57, 73, 38, 0.38); }
-    .chip[data-priority="low"].active { border-color: var(--low); color: #b4cbd2; background: rgba(37, 54, 58, 0.36); }
 
     .btn,
     .toggle {
-      border: 1px solid var(--line-bright);
+      border: 1px solid var(--line-strong);
       border-radius: 8px;
-      background: linear-gradient(180deg, #1a2522, #121917);
-      color: #d1d7cc;
+      background: linear-gradient(180deg, #1a2522, #131917);
+      color: #d0d8cc;
       text-transform: uppercase;
-      font-size: 0.66rem;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.11em;
+      font-size: 0.64rem;
       padding: 8px 10px;
       cursor: pointer;
       white-space: nowrap;
@@ -239,45 +254,44 @@
       color: var(--amber);
     }
 
+    .btn.warn {
+      border-color: #7f5c48;
+      color: #dfbd95;
+      background: linear-gradient(180deg, #2a1f19, #1b1410);
+    }
+
     .btn:disabled,
     .toggle:disabled {
       opacity: 0.55;
       cursor: not-allowed;
-      transform: none;
-      color: #a3aca0;
       border-color: var(--line);
-    }
-
-    .btn.warn {
-      border-color: #7d5c45;
-      color: #dcbb92;
-      background: linear-gradient(180deg, #2a1f17, #1b140f);
+      color: #98a295;
     }
 
     .toggle[data-on="true"] {
       border-color: var(--amber);
-      background: rgba(70, 58, 37, 0.45);
       color: var(--amber);
+      background: rgba(66, 56, 35, 0.46);
     }
 
     :focus-visible {
-      outline: 2px solid rgba(210, 180, 118, 0.58);
+      outline: 2px solid rgba(212, 184, 126, 0.58);
       outline-offset: 1px;
     }
 
-    .content {
+    .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(290px, 320px);
+      grid-template-columns: minmax(0, 1fr) minmax(310px, 360px);
       gap: 12px;
-      min-height: 72vh;
+      min-height: 74vh;
     }
 
     .board {
       padding: 12px;
       display: grid;
+      gap: 10px;
       align-content: start;
-      gap: 12px;
-      max-height: calc(100vh - 196px);
+      max-height: calc(100vh - 210px);
       overflow: auto;
       scrollbar-width: thin;
     }
@@ -291,62 +305,58 @@
     .stat {
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-      background: rgba(13, 19, 17, 0.78);
-      padding: 9px 10px;
+      background: rgba(13, 19, 17, 0.8);
+      padding: 8px 10px;
       display: grid;
-      gap: 4px;
-      min-height: 72px;
+      gap: 2px;
+      min-height: 70px;
     }
 
     .stat .label {
       margin: 0;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.62rem;
+      letter-spacing: 0.11em;
+      font-size: 0.58rem;
     }
 
     .stat .value {
       margin: 0;
       color: var(--amber);
-      font-family: var(--font-ui);
-      font-size: 1.35rem;
+      font-family: var(--font-title);
+      font-size: 1.3rem;
       letter-spacing: 0.04em;
       line-height: 1;
     }
 
     .stat .sub {
       margin: 0;
-      color: #97a291;
-      font-size: 0.65rem;
+      color: #9aa699;
+      font-size: 0.61rem;
     }
 
-    .catalog-status {
+    .catalog {
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-      background: rgba(12, 18, 16, 0.75);
+      background: rgba(12, 17, 16, 0.74);
       padding: 8px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      color: #adb8aa;
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       letter-spacing: 0.09em;
       text-transform: uppercase;
+      color: #afbaae;
     }
 
-    .catalog-status strong {
+    .catalog strong {
       color: var(--amber);
       font-weight: 600;
     }
 
-    .catalog-status[data-state="error"] strong {
-      color: #df9b8f;
-    }
-
-    .catalog-status[data-state="loading"] strong {
-      color: #e2ca97;
+    .catalog[data-state="error"] strong {
+      color: #e0a698;
     }
 
     .groups {
@@ -359,7 +369,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
       overflow: hidden;
-      background: rgba(10, 15, 14, 0.72);
+      background: rgba(10, 15, 13, 0.74);
     }
 
     .group-head {
@@ -368,178 +378,164 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid rgba(76, 93, 86, 0.55);
-      background: linear-gradient(180deg, rgba(24, 32, 29, 0.75), rgba(15, 21, 19, 0.8));
+      border-bottom: 1px solid rgba(87, 103, 95, 0.55);
+      background: linear-gradient(180deg, rgba(25, 34, 31, 0.78), rgba(15, 21, 19, 0.82));
     }
 
     .group-head h3 {
       margin: 0;
-      color: #d7c492;
-      font-family: var(--font-ui);
+      color: #dbc895;
+      font-family: var(--font-title);
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-size: 0.8rem;
+      letter-spacing: 0.09em;
+      font-size: 0.77rem;
     }
 
     .group-head span {
-      border: 1px solid var(--line-bright);
+      border: 1px solid var(--line-strong);
       border-radius: 999px;
       padding: 3px 8px;
-      font-size: 0.62rem;
-      color: #afbaae;
+      font-size: 0.58rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      color: #b2bcae;
     }
 
-    .task-grid {
+    .mission-list {
       display: grid;
-      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .mission {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) minmax(130px, 160px);
       gap: 8px;
-      padding: 8px;
-    }
-
-    .task {
-      border: 1px solid rgba(77, 95, 86, 0.62);
-      border-radius: 10px;
-      background: linear-gradient(180deg, rgba(18, 24, 22, 0.8), rgba(12, 16, 15, 0.82));
-      padding: 8px 9px;
-      display: grid;
-      gap: 6px;
-      cursor: pointer;
-      transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-
-    .task:hover {
-      transform: translateY(-1px);
-      border-color: rgba(169, 145, 98, 0.72);
-    }
-
-    .task.active {
-      border-color: rgba(210, 180, 118, 0.95);
-      box-shadow: 0 0 0 1px rgba(210, 180, 118, 0.2);
-    }
-
-    .task.completed {
-      opacity: 0.82;
-      border-color: rgba(101, 124, 82, 0.8);
-    }
-
-    .task-top {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
-      gap: 7px;
+      padding: 8px 10px;
+      border-top: 1px solid rgba(67, 82, 75, 0.45);
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
     }
 
-    .priority-dot {
-      width: 9px;
-      height: 9px;
+    .mission:first-child {
+      border-top: none;
+    }
+
+    .mission:hover {
+      background: rgba(36, 50, 45, 0.28);
+    }
+
+    .mission.active {
+      background: rgba(62, 54, 35, 0.3);
+      box-shadow: inset 2px 0 0 rgba(212, 184, 126, 0.9);
+    }
+
+    .mission.completed {
+      opacity: 0.8;
+    }
+
+    .check {
+      width: 26px;
+      height: 26px;
       border-radius: 999px;
-      border: 1px solid rgba(0, 0, 0, 0.3);
-      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
-    }
-
-    .priority-dot[data-priority="critical"] { background: var(--critical); }
-    .priority-dot[data-priority="high"] { background: var(--high); }
-    .priority-dot[data-priority="medium"] { background: var(--medium); }
-    .priority-dot[data-priority="low"] { background: var(--low); }
-
-    .task h4 {
-      margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.35;
-      letter-spacing: 0.03em;
-      color: #dbe1d6;
-    }
-
-    .done {
       border: 1px solid var(--line);
-      background: #101614;
-      color: #8a968c;
-      border-radius: 999px;
-      width: 28px;
-      height: 28px;
+      background: rgba(15, 21, 19, 0.86);
+      color: #8e998f;
       display: grid;
       place-items: center;
-      font-size: 0.82rem;
       cursor: pointer;
+      font-size: 0.78rem;
+      line-height: 1;
     }
 
-    .done[data-done="true"] {
+    .check[data-done="true"] {
       border-color: var(--green);
-      color: #d1e0be;
-      background: rgba(74, 96, 53, 0.34);
+      background: rgba(76, 100, 57, 0.32);
+      color: #d6e4c2;
     }
 
-    .meta {
+    .mission-main {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .mission-title {
+      margin: 0;
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+      line-height: 1.3;
+      color: #dbe1d6;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .mission-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .pill {
-      border: 1px solid rgba(83, 99, 92, 0.7);
-      border-radius: 999px;
-      padding: 3px 7px;
-      color: #afbaae;
-      font-size: 0.57rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: rgba(15, 21, 19, 0.72);
-    }
-
-    .pill.priority-critical { border-color: rgba(164, 91, 73, 0.85); color: #d9a79d; }
-    .pill.priority-high { border-color: rgba(161, 122, 71, 0.85); color: #dbbc92; }
-    .pill.priority-medium { border-color: rgba(119, 133, 79, 0.85); color: #c7d29c; }
-    .pill.priority-low { border-color: rgba(93, 116, 122, 0.85); color: #b2c7cf; }
-
-    .desc {
-      margin: 0;
-      color: #b2bcae;
-      font-size: 0.67rem;
-      line-height: 1.45;
-      min-height: 0;
-    }
-
-    .progress {
-      display: grid;
       gap: 4px;
     }
 
-    .progress-head {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.6rem;
-      color: #8d988b;
+    .tag {
+      border: 1px solid rgba(86, 102, 94, 0.72);
+      border-radius: 999px;
+      padding: 2px 6px;
+      color: #aeb9ad;
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      background: rgba(13, 19, 17, 0.76);
+    }
+
+    .tag.kappa {
+      border-color: rgba(129, 155, 104, 0.9);
+      color: #d1e0be;
+      background: rgba(57, 75, 39, 0.4);
+    }
+
+    .mission-progress {
+      display: grid;
+      gap: 4px;
+      justify-items: end;
+    }
+
+    .mission-progress .label {
+      margin: 0;
+      font-size: 0.57rem;
+      color: #95a193;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: right;
     }
 
     .bar {
-      border: 1px solid rgba(79, 96, 89, 0.75);
+      width: 100%;
+      max-width: 130px;
+      border: 1px solid rgba(82, 98, 91, 0.74);
       border-radius: 999px;
       height: 7px;
       overflow: hidden;
-      background: #0c1110;
+      background: #0b100f;
     }
 
     .bar span {
       display: block;
       height: 100%;
       width: 0;
-      background: linear-gradient(90deg, var(--green), var(--amber));
-      transition: width 0.22s ease;
+      background: linear-gradient(90deg, #728a5e, #d4b87e);
+      transition: width 0.2s ease;
     }
 
     .empty {
-      border: 1px dashed rgba(79, 97, 89, 0.8);
-      border-radius: 10px;
+      border: 1px dashed rgba(84, 101, 94, 0.84);
+      border-radius: var(--radius-sm);
       padding: 18px;
-      color: var(--muted);
       text-align: center;
+      color: var(--muted);
+      font-size: 0.64rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.68rem;
+      letter-spacing: 0.11em;
       background: rgba(11, 16, 15, 0.72);
     }
 
@@ -548,7 +544,7 @@
       display: grid;
       gap: 10px;
       align-content: start;
-      max-height: calc(100vh - 196px);
+      max-height: calc(100vh - 210px);
       overflow: auto;
       scrollbar-width: thin;
     }
@@ -556,40 +552,53 @@
     .detail h2 {
       margin: 0;
       color: var(--amber);
-      font-family: var(--font-ui);
+      font-family: var(--font-title);
+      font-size: 0.96rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      font-size: 0.95rem;
       line-height: 1.35;
     }
 
-    .detail .subtitle {
+    .sub {
       margin: 0;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.62rem;
+      letter-spacing: 0.11em;
+      font-size: 0.58rem;
     }
 
-    .detail .link {
-      color: #b7c9de;
-      font-size: 0.66rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      text-decoration: none;
-      border-bottom: 1px dotted rgba(183, 201, 222, 0.4);
+    .desc {
+      margin: 0;
+      color: #b5bfae;
+      font-size: 0.68rem;
+      line-height: 1.5;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .wiki {
       width: fit-content;
+      color: #bed0e6;
+      text-decoration: none;
+      font-size: 0.61rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      border-bottom: 1px dotted rgba(190, 208, 230, 0.45);
     }
 
-    .detail .link:hover {
-      color: #d1e3f8;
-      border-bottom-color: rgba(209, 227, 248, 0.7);
+    .wiki:hover {
+      color: #d6e6fb;
+      border-bottom-color: rgba(214, 230, 251, 0.8);
     }
 
-    .label {
+    .label-title {
       margin: 0;
       color: var(--muted);
-      font-size: 0.62rem;
+      font-size: 0.58rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
     }
@@ -603,53 +612,47 @@
       gap: 6px;
     }
 
-    .objective-item {
+    .objective {
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(14, 20, 18, 0.76);
+      background: rgba(14, 20, 18, 0.78);
       padding: 7px;
       display: flex;
       align-items: flex-start;
       gap: 7px;
-      color: #c1cabb;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       line-height: 1.4;
+      color: #c2ccbe;
     }
 
-    .objective-item input {
+    .objective input {
       margin-top: 1px;
       accent-color: var(--amber-soft);
     }
 
-    .objective-item.done {
-      border-color: rgba(111, 129, 89, 0.85);
+    .objective.done {
+      border-color: rgba(121, 145, 98, 0.9);
       color: #9eac99;
       text-decoration: line-through;
     }
 
-    .activity-item {
+    .activity {
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(13, 18, 17, 0.72);
+      background: rgba(12, 18, 16, 0.72);
       padding: 7px;
       display: grid;
-      gap: 3px;
-      font-size: 0.66rem;
-      color: #aeb8ac;
+      gap: 2px;
+      color: #afb8ad;
+      font-size: 0.61rem;
       line-height: 1.35;
     }
 
-    .activity-item time {
-      color: #8e9a8c;
-      font-size: 0.58rem;
+    .activity time {
+      color: #8f9a8d;
+      font-size: 0.55rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-    }
-
-    .split-buttons {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 6px;
     }
 
     .modal-backdrop {
@@ -658,7 +661,7 @@
       z-index: 10000;
       display: none;
       place-items: center;
-      background: rgba(5, 8, 7, 0.78);
+      background: rgba(6, 8, 7, 0.8);
       padding: 14px;
     }
 
@@ -668,9 +671,9 @@
 
     .modal {
       width: min(680px, 100%);
-      border: 1px solid var(--line-bright);
+      border: 1px solid var(--line-strong);
       border-radius: 12px;
-      background: linear-gradient(165deg, rgba(20, 26, 24, 0.98), rgba(13, 18, 16, 0.98));
+      background: linear-gradient(165deg, rgba(20, 27, 25, 0.98), rgba(13, 18, 16, 0.98));
       box-shadow: var(--shadow);
       padding: 12px;
       display: grid;
@@ -687,10 +690,10 @@
     .modal-head h3 {
       margin: 0;
       color: var(--amber);
-      font-family: var(--font-ui);
+      font-family: var(--font-title);
       font-size: 0.9rem;
       text-transform: uppercase;
-      letter-spacing: 0.11em;
+      letter-spacing: 0.1em;
     }
 
     .close {
@@ -701,9 +704,9 @@
       background: #111715;
       color: var(--text);
       font-size: 1rem;
-      cursor: pointer;
       display: grid;
       place-items: center;
+      cursor: pointer;
     }
 
     .form {
@@ -719,9 +722,32 @@
     .form-label {
       margin: 0 0 4px;
       color: var(--muted);
-      font-size: 0.62rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.11em;
+      font-size: 0.58rem;
+    }
+
+    .textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .checkbox-line {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #aeb8ad;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(13, 18, 17, 0.8);
+      padding: 8px 10px;
+    }
+
+    .checkbox-line input {
+      accent-color: var(--amber-soft);
     }
 
     .toast {
@@ -729,20 +755,20 @@
       left: 50%;
       transform: translateX(-50%) translateY(110%);
       bottom: 14px;
-      border: 1px solid var(--line-bright);
+      z-index: 10001;
+      border: 1px solid var(--line-strong);
       border-radius: 999px;
-      background: rgba(14, 20, 18, 0.95);
+      background: rgba(13, 19, 17, 0.96);
       color: var(--amber);
       text-transform: uppercase;
       letter-spacing: 0.09em;
-      font-size: 0.66rem;
+      font-size: 0.62rem;
       padding: 9px 13px;
-      z-index: 10001;
-      transition: transform 0.25s ease;
-      box-shadow: var(--shadow);
+      transition: transform 0.24s ease;
       pointer-events: none;
       max-width: min(92vw, 760px);
       text-align: center;
+      box-shadow: var(--shadow);
     }
 
     .toast.show {
@@ -751,40 +777,35 @@
 
     .crt-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      inset: 0;
       z-index: 9998;
-      background:
-        radial-gradient(circle, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.52) 100%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.17) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.045), rgba(0, 255, 0, 0.018), rgba(0, 0, 255, 0.045));
-      background-size: 100% 100%, 100% 2px, 3px 100%;
       pointer-events: none;
+      background:
+        radial-gradient(circle, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.74) 100%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.085), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.085));
+      background-size: 100% 100%, 100% 2px, 3px 100%;
+      opacity: 0.9;
     }
 
     .screen-flicker {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      inset: 0;
       z-index: 9997;
-      background: rgba(255, 255, 255, 0.015);
-      opacity: 0;
       pointer-events: none;
-      animation: flicker 0.18s infinite;
+      background: rgba(255, 255, 255, 0.012);
+      opacity: 0;
+      animation: flicker 0.36s infinite;
     }
 
     @keyframes flicker {
-      0% { opacity: 0.02; }
-      50% { opacity: 0.05; }
-      100% { opacity: 0.02; }
+      0% { opacity: 0.006; }
+      50% { opacity: 0.018; }
+      100% { opacity: 0.006; }
     }
 
-    @media (max-width: 1220px) {
-      .content {
+    @media (max-width: 1280px) {
+      .layout {
         grid-template-columns: 1fr;
       }
 
@@ -798,34 +819,39 @@
       }
     }
 
-    @media (max-width: 980px) {
-      body {
+    @media (max-width: 1020px) {
+      .app {
         padding: 10px;
       }
 
-      .control-row,
-      .control-row.secondary {
+      .header {
         grid-template-columns: 1fr;
       }
 
-      .chip-row {
-        width: 100%;
-      }
-
-      .head {
-        grid-template-columns: 1fr;
-      }
-
-      .head-right {
+      .head-meta {
         justify-content: flex-start;
+      }
+
+      .row.top,
+      .row.bottom {
+        grid-template-columns: 1fr;
       }
 
       .stats {
         grid-template-columns: 1fr;
       }
 
-      .task-grid {
-        grid-template-columns: 1fr;
+      .mission {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .mission-progress {
+        grid-column: 1 / -1;
+        justify-items: start;
+      }
+
+      .bar {
+        max-width: none;
       }
 
       .form {
@@ -836,63 +862,56 @@
 </head>
 <body>
   <div class="app">
-    <header class="panel head">
+    <header class="panel header">
       <div>
-        <p class="kicker">Escape From Tarkov // Tactical Operations Tracker</p>
-        <h1>Trader + Storyline Command Board</h1>
+        <p class="kicker">Escape From Tarkov // Command Mission Tracker</p>
+        <h1>Trader + Storyline Board</h1>
       </div>
-      <div class="head-right">
-        <span class="badge">Clock <strong id="clock">--:--:--</strong></span>
+      <div class="head-meta">
+        <span class="chip">Clock <strong id="clock">--:--:--</strong></span>
+        <span class="chip" id="kappaBadge">Kappa Mode <strong>OFF</strong></span>
       </div>
     </header>
 
-    <section class="panel control" aria-label="Task controls">
-      <div class="control-row">
-        <input id="searchInput" class="input" type="search" placeholder="Search task title, objective, map, trader...">
+    <section class="panel controls" aria-label="Controls">
+      <div class="row top">
+        <input id="searchInput" class="search" type="search" placeholder="Search task name, trader, objective, map...">
+        <button id="kappaToggle" class="toggle" data-on="false">Kappa Only: Off</button>
         <button id="showCompletedToggle" class="toggle" data-on="true">Show Completed: On</button>
-        <button id="groupByTraderToggle" class="toggle" data-on="true">Group: Trader</button>
         <button id="syncCatalogBtn" class="btn">Sync Official Catalog</button>
-        <button id="newTaskBtn" class="btn">New Task</button>
       </div>
-
-      <div class="control-row secondary">
-        <div class="chip-row" id="categoryChips" aria-label="Category filters">
-          <button class="chip active" data-filter="category" data-value="all">All</button>
-          <button class="chip" data-filter="category" data-value="trader">Trader</button>
-          <button class="chip" data-filter="category" data-value="storyline">Storyline</button>
-          <button class="chip" data-filter="category" data-value="custom">Custom</button>
+      <div class="row bottom">
+        <div class="filter-bar" id="categoryFilters" aria-label="Category">
+          <button class="filter-btn active" data-filter="category" data-value="all">All</button>
+          <button class="filter-btn" data-filter="category" data-value="trader">Trader</button>
+          <button class="filter-btn" data-filter="category" data-value="storyline">Storyline</button>
+          <button class="filter-btn" data-filter="category" data-value="custom">Custom</button>
         </div>
-        <select id="prioritySelect" class="select" aria-label="Priority filter">
-          <option value="all">All Priorities</option>
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
         <select id="traderSelect" class="select" aria-label="Trader filter"></select>
         <select id="sortSelect" class="select" aria-label="Sort tasks">
-          <option value="priority">Sort: Priority</option>
+          <option value="updated">Sort: Updated</option>
           <option value="level">Sort: Level</option>
           <option value="progress">Sort: Progress</option>
-          <option value="updated">Sort: Updated</option>
           <option value="title">Sort: Title</option>
+          <option value="trader">Sort: Trader</option>
         </select>
-        <button id="clearFiltersBtn" class="btn">Clear Filters</button>
-        <button id="resetProgressBtn" class="btn warn">Reset Progress</button>
+        <button id="groupToggle" class="toggle" data-on="true">Group: Trader</button>
+        <button id="newTaskBtn" class="btn">New Task</button>
+        <button id="clearFiltersBtn" class="btn warn">Reset View</button>
       </div>
     </section>
 
-    <section class="content">
+    <section class="layout">
       <main class="panel board" aria-label="Task board">
-        <section class="stats" id="stats"></section>
+        <section id="stats" class="stats"></section>
 
-        <div class="catalog-status" id="catalogStatus" data-state="idle">
+        <div id="catalogStatus" class="catalog" data-state="idle">
           <span id="catalogStatusText">Catalog status: <strong>Idle</strong></span>
-          <div class="split-buttons">
+          <div class="filter-bar">
             <button id="exportBtn" class="btn">Export JSON</button>
             <button id="importBtn" class="btn">Import JSON</button>
+            <input id="importInput" type="file" accept="application/json" hidden>
           </div>
-          <input id="importInput" type="file" accept="application/json" hidden>
         </div>
 
         <section id="groups" class="groups" aria-live="polite"></section>
@@ -900,22 +919,20 @@
 
       <aside class="panel detail" aria-label="Task detail">
         <section id="detailPane"></section>
-
-        <div>
-          <p class="label">Recent Activity</p>
+        <section>
+          <p class="label-title">Recent Activity</p>
           <ul id="activityList" class="activity-list"></ul>
-        </div>
+        </section>
       </aside>
     </section>
   </div>
 
-  <div id="taskModal" class="modal-backdrop" data-open="false" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+  <div id="taskModal" class="modal-backdrop" data-open="false" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
       <div class="modal-head">
-        <h3 id="taskModalTitle">Create Custom Task</h3>
+        <h3 id="modalTitle">Create Custom Task</h3>
         <button id="closeModalBtn" class="close" aria-label="Close">×</button>
       </div>
-
       <form id="taskForm" class="form">
         <div>
           <p class="form-label">Title</p>
@@ -938,21 +955,16 @@
           <input id="formMap" class="input" placeholder="Customs, Streets, Lighthouse...">
         </div>
         <div>
-          <p class="form-label">Priority</p>
-          <select id="formPriority" class="select">
-            <option value="medium">Medium</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div>
           <p class="form-label">Min Level</p>
           <input id="formLevel" class="input" type="number" min="1" max="79" value="1">
         </div>
+        <div class="checkbox-line">
+          <input id="formKappaRequired" type="checkbox">
+          <label for="formKappaRequired">Required for Kappa</label>
+        </div>
         <div class="full">
           <p class="form-label">Description</p>
-          <textarea id="formDescription" class="textarea" placeholder="Operational notes, requirements, and mission intent..."></textarea>
+          <textarea id="formDescription" class="textarea" placeholder="Mission intent and notes..."></textarea>
         </div>
         <div class="full">
           <p class="form-label">Objectives (one per line)</p>
@@ -965,14 +977,13 @@
 
   <div class="crt-overlay" aria-hidden="true"></div>
   <div class="screen-flicker" aria-hidden="true"></div>
-
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="./official-catalog-snapshot.js"></script>
   <script>
     (() => {
-      const STORAGE_KEY = "eft_tracker_state_v4";
-      const OFFICIAL_CACHE_KEY = "eft_tracker_official_cache_v1";
+      const STORAGE_KEY = "eft_tracker_state_v5";
+      const OFFICIAL_CACHE_KEY = "eft_tracker_official_cache_v2";
       const OFFICIAL_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
       const OFFICIAL_ENDPOINT = "https://api.tarkov.dev/graphql";
       const OFFICIAL_QUERY = `query EFTTasks {
@@ -989,7 +1000,7 @@
       const OFFLINE_OFFICIAL_TASKS = Array.isArray(window.EFT_OFFICIAL_SNAPSHOT)
         ? window.EFT_OFFICIAL_SNAPSHOT
         : [];
-      const ACTIVITY_LIMIT = 14;
+      const ACTIVITY_LIMIT = 16;
 
       const MAP_HINTS = [
         "Ground Zero",
@@ -1014,14 +1025,14 @@
           category: "trader",
           trader: "Prapor",
           map: "Customs",
-          priority: "critical",
           level: 1,
-          description: "Eliminate scavs and hand over MP-133 shotguns for initial Prapor trust.",
+          description: "Eliminate scavs and hand over MP-133 shotguns for initial trust.",
           objectives: [
-            { id: "fallback-debut-o1", text: "Eliminate 5 scavs on Customs", done: false },
-            { id: "fallback-debut-o2", text: "Hand over 2 MP-133 shotguns", done: false }
+            { id: "fallback-debut-1", text: "Eliminate 5 Scavs on Customs", done: false },
+            { id: "fallback-debut-2", text: "Hand over 2 MP-133 shotguns", done: false }
           ],
-          tags: ["early", "combat", "turn-in"],
+          tags: ["early", "combat"],
+          kappaRequired: true,
           completed: false,
           updatedAt: new Date().toISOString(),
           source: "fallback",
@@ -1033,53 +1044,14 @@
           category: "trader",
           trader: "Therapist",
           map: "Any",
-          priority: "high",
-          level: 2,
+          level: 1,
           description: "Find and deliver Salewa kits to Therapist.",
           objectives: [
-            { id: "fallback-shortage-o1", text: "Find 3 Salewa kits", done: false },
-            { id: "fallback-shortage-o2", text: "Hand over all kits", done: false }
+            { id: "fallback-shortage-1", text: "Find 3 Salewa kits", done: false },
+            { id: "fallback-shortage-2", text: "Hand over all kits", done: false }
           ],
           tags: ["medical", "loot"],
-          completed: false,
-          updatedAt: new Date().toISOString(),
-          source: "fallback",
-          wikiLink: ""
-        },
-        {
-          id: "fallback-gunsmith-1",
-          title: "Gunsmith - Part 1",
-          category: "trader",
-          trader: "Mechanic",
-          map: "Hideout",
-          priority: "critical",
-          level: 2,
-          description: "Build and hand over an MP-133 that meets strict mechanical specs.",
-          objectives: [
-            { id: "fallback-gunsmith-1-o1", text: "Assemble required MP-133 configuration", done: false },
-            { id: "fallback-gunsmith-1-o2", text: "Hand over weapon to Mechanic", done: false }
-          ],
-          tags: ["modding", "mechanic"],
-          completed: false,
-          updatedAt: new Date().toISOString(),
-          source: "fallback",
-          wikiLink: ""
-        },
-        {
-          id: "fallback-ground-zero",
-          title: "Ground Zero Breakthrough",
-          category: "storyline",
-          trader: "Narrative Command",
-          map: "Ground Zero",
-          priority: "high",
-          level: 1,
-          description: "Complete initial storyline objectives to unlock broader operation chains.",
-          objectives: [
-            { id: "fallback-ground-zero-o1", text: "Enter Ground Zero", done: false },
-            { id: "fallback-ground-zero-o2", text: "Recover encrypted document", done: false },
-            { id: "fallback-ground-zero-o3", text: "Extract alive", done: false }
-          ],
-          tags: ["storyline", "starter"],
+          kappaRequired: true,
           completed: false,
           updatedAt: new Date().toISOString(),
           source: "fallback",
@@ -1092,11 +1064,11 @@
         filters: {
           query: "",
           category: "all",
-          priority: "all",
           trader: "all",
-          showCompleted: true
+          showCompleted: true,
+          kappaOnly: false
         },
-        sort: "priority",
+        sort: "updated",
         groupByTrader: true,
         selectedTaskId: null,
         activity: [],
@@ -1110,23 +1082,23 @@
 
       const refs = {
         clock: document.getElementById("clock"),
+        kappaBadge: document.getElementById("kappaBadge"),
         searchInput: document.getElementById("searchInput"),
-        categoryChips: document.getElementById("categoryChips"),
-        prioritySelect: document.getElementById("prioritySelect"),
+        kappaToggle: document.getElementById("kappaToggle"),
+        showCompletedToggle: document.getElementById("showCompletedToggle"),
+        syncCatalogBtn: document.getElementById("syncCatalogBtn"),
+        categoryFilters: document.getElementById("categoryFilters"),
         traderSelect: document.getElementById("traderSelect"),
         sortSelect: document.getElementById("sortSelect"),
-        showCompletedToggle: document.getElementById("showCompletedToggle"),
-        groupByTraderToggle: document.getElementById("groupByTraderToggle"),
-        syncCatalogBtn: document.getElementById("syncCatalogBtn"),
-        clearFiltersBtn: document.getElementById("clearFiltersBtn"),
-        resetProgressBtn: document.getElementById("resetProgressBtn"),
+        groupToggle: document.getElementById("groupToggle"),
         newTaskBtn: document.getElementById("newTaskBtn"),
-        groups: document.getElementById("groups"),
+        clearFiltersBtn: document.getElementById("clearFiltersBtn"),
         stats: document.getElementById("stats"),
-        detailPane: document.getElementById("detailPane"),
-        activityList: document.getElementById("activityList"),
         catalogStatus: document.getElementById("catalogStatus"),
         catalogStatusText: document.getElementById("catalogStatusText"),
+        groups: document.getElementById("groups"),
+        detailPane: document.getElementById("detailPane"),
+        activityList: document.getElementById("activityList"),
         exportBtn: document.getElementById("exportBtn"),
         importBtn: document.getElementById("importBtn"),
         importInput: document.getElementById("importInput"),
@@ -1136,22 +1108,15 @@
         toast: document.getElementById("toast")
       };
 
-      const priorityRank = {
-        critical: 0,
-        high: 1,
-        medium: 2,
-        low: 3
-      };
-
-      function nowIso() {
-        return new Date().toISOString();
-      }
-
       function uid() {
         if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
           return crypto.randomUUID();
         }
         return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function nowIso() {
+        return new Date().toISOString();
       }
 
       function readJson(key, fallback) {
@@ -1167,7 +1132,7 @@
         try {
           localStorage.setItem(key, JSON.stringify(value));
         } catch {
-          // Ignore storage errors
+          // ignore
         }
       }
 
@@ -1175,9 +1140,7 @@
         refs.toast.textContent = message;
         refs.toast.classList.add("show");
         clearTimeout(showToast.timer);
-        showToast.timer = setTimeout(() => {
-          refs.toast.classList.remove("show");
-        }, 1800);
+        showToast.timer = setTimeout(() => refs.toast.classList.remove("show"), 1800);
       }
 
       function addActivity(text) {
@@ -1194,7 +1157,6 @@
       }
 
       function sanitizeTask(task, index) {
-        const source = task?.source === "custom" ? "custom" : task?.source || "import";
         const objectivesRaw = Array.isArray(task?.objectives) ? task.objectives : [];
         const objectives = objectivesRaw.length
           ? objectivesRaw.map((objective, objectiveIndex) => cleanObjective(objective, objectiveIndex))
@@ -1204,24 +1166,20 @@
           ? task.category
           : "custom";
 
-        const priority = ["critical", "high", "medium", "low"].includes(task?.priority)
-          ? task.priority
-          : "medium";
-
         const clean = {
           id: String(task?.id || `task-${Date.now()}-${index}`),
           title: String(task?.title || `Task ${index + 1}`),
           category,
           trader: String(task?.trader || (category === "storyline" ? "Narrative Command" : "Operations")),
           map: String(task?.map || "Various"),
-          priority,
           level: Math.max(1, Number(task?.level) || 1),
           description: String(task?.description || objectives[0]?.text || "No description"),
           objectives,
           tags: Array.isArray(task?.tags) ? task.tags.map((tag) => String(tag)) : [],
+          kappaRequired: Boolean(task?.kappaRequired),
           completed: Boolean(task?.completed),
           updatedAt: task?.updatedAt || nowIso(),
-          source,
+          source: String(task?.source || "import"),
           wikiLink: String(task?.wikiLink || "")
         };
 
@@ -1233,9 +1191,7 @@
 
       function sanitizeTaskList(list) {
         if (!Array.isArray(list)) return [];
-        return list
-          .filter((item) => item && typeof item === "object")
-          .map((item, index) => sanitizeTask(item, index));
+        return list.filter((item) => item && typeof item === "object").map((item, index) => sanitizeTask(item, index));
       }
 
       function inferCategory(rawTask, traderName) {
@@ -1246,14 +1202,6 @@
         if (trader.includes("lightkeeper") || trader.includes("ref")) return "storyline";
         if (!traderName) return "storyline";
         return "trader";
-      }
-
-      function inferPriority(rawTask) {
-        const level = Math.max(1, Number(rawTask?.minPlayerLevel) || 1);
-        if (rawTask?.kappaRequired) return "critical";
-        if (level <= 8) return "high";
-        if (level <= 26) return "medium";
-        return "low";
       }
 
       function inferMap(name, objectiveDescriptions) {
@@ -1269,6 +1217,7 @@
         const title = String(rawTask?.name || `Official Task ${index + 1}`);
         const traderName = String(rawTask?.trader?.name || "Narrative Command");
         const category = inferCategory(rawTask, rawTask?.trader?.name);
+
         const objectiveDescriptions = Array.isArray(rawTask?.objectives)
           ? rawTask.objectives.map((objective) => String(objective?.description || "").trim()).filter(Boolean)
           : [];
@@ -1281,22 +1230,17 @@
             }))
           : [{ id: `official-${id}-o1`, text: "Complete all official objectives", done: false }];
 
-        const map = inferMap(title, objectiveDescriptions);
-        const priority = inferPriority(rawTask);
-        const tags = [category, traderName.toLowerCase().replace(/\s+/g, "-")];
-        if (rawTask?.kappaRequired) tags.push("kappa");
-
         return {
           id: `official:${id}`,
           title,
           category,
           trader: traderName,
-          map,
-          priority,
+          map: inferMap(title, objectiveDescriptions),
           level: Math.max(1, Number(rawTask?.minPlayerLevel) || 1),
           description: objectiveDescriptions[0] || "No objective description available.",
           objectives,
-          tags,
+          tags: [category, traderName.toLowerCase().replace(/\s+/g, "-")],
+          kappaRequired: Boolean(rawTask?.kappaRequired),
           completed: false,
           updatedAt: nowIso(),
           source: "official",
@@ -1310,22 +1254,15 @@
         const byId = new Map(existingTask.objectives.map((objective) => [objective.id, objective.done]));
         const byText = new Map(existingTask.objectives.map((objective) => [objective.text.toLowerCase(), objective.done]));
 
-        const mergedObjectives = officialTask.objectives.map((objective) => {
-          const doneById = byId.get(objective.id);
-          const doneByText = byText.get(objective.text.toLowerCase());
-          return {
-            ...objective,
-            done: doneById ?? doneByText ?? false
-          };
-        });
-
-        const completed =
-          mergedObjectives.length > 0 ? mergedObjectives.every((objective) => objective.done) : existingTask.completed;
+        const objectives = officialTask.objectives.map((objective) => ({
+          ...objective,
+          done: byId.get(objective.id) ?? byText.get(objective.text.toLowerCase()) ?? false
+        }));
 
         return {
           ...officialTask,
-          objectives: mergedObjectives,
-          completed,
+          objectives,
+          completed: objectives.length ? objectives.every((objective) => objective.done) : existingTask.completed,
           updatedAt: existingTask.updatedAt || officialTask.updatedAt
         };
       }
@@ -1333,20 +1270,14 @@
       async function fetchOfficialTasks() {
         const response = await fetch(OFFICIAL_ENDPOINT, {
           method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
+          headers: { "content-type": "application/json" },
           body: JSON.stringify({ query: OFFICIAL_QUERY })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const payload = await response.json();
-        if (payload?.errors?.length) {
-          throw new Error(payload.errors[0]?.message || "GraphQL error");
-        }
+        if (payload?.errors?.length) throw new Error(payload.errors[0]?.message || "GraphQL error");
 
         return Array.isArray(payload?.data?.tasks) ? payload.data.tasks : [];
       }
@@ -1359,28 +1290,18 @@
       }
 
       function writeOfficialCache(tasks) {
-        writeJson(OFFICIAL_CACHE_KEY, {
-          cachedAt: nowIso(),
-          tasks
-        });
+        writeJson(OFFICIAL_CACHE_KEY, { cachedAt: nowIso(), tasks });
       }
 
       function applyOfficialCatalog(rawOfficialTasks, { announce = false } = {}) {
-        const normalizedOfficial = rawOfficialTasks
-          .map((task, index) => normalizeOfficialTask(task, index))
-          .filter(Boolean);
-
-        if (!normalizedOfficial.length) {
-          throw new Error("Official catalog empty");
-        }
+        const normalized = rawOfficialTasks.map((task, index) => normalizeOfficialTask(task, index)).filter(Boolean);
+        if (!normalized.length) throw new Error("Official catalog empty");
 
         const existingById = new Map(state.tasks.map((task) => [task.id, task]));
-        const mergedOfficial = normalizedOfficial.map((task) => mergeProgress(task, existingById.get(task.id)));
-        const retainedLocalTasks = state.tasks.filter(
-          (task) => task.source !== "official" && task.source !== "fallback"
-        );
+        const mergedOfficial = normalized.map((task) => mergeProgress(task, existingById.get(task.id)));
+        const retainedLocal = state.tasks.filter((task) => task.source !== "official" && task.source !== "fallback");
 
-        state.tasks = [...mergedOfficial, ...retainedLocalTasks];
+        state.tasks = [...mergedOfficial, ...retainedLocal];
         state.sync.officialCount = mergedOfficial.length;
 
         if (!state.tasks.some((task) => task.id === state.selectedTaskId)) {
@@ -1389,7 +1310,7 @@
 
         if (announce) {
           addActivity(`Official catalog synced (${mergedOfficial.length} tasks).`);
-          showToast(`Catalog synced: ${mergedOfficial.length} official tasks`);
+          showToast(`Catalog synced: ${mergedOfficial.length} tasks`);
         }
       }
 
@@ -1414,18 +1335,15 @@
           }
 
           applyOfficialCatalog(officialRaw, { announce });
-        } catch (error) {
-          const hasOfflineSnapshot = Array.isArray(OFFLINE_OFFICIAL_TASKS) && OFFLINE_OFFICIAL_TASKS.length > 0;
-          if (hasOfflineSnapshot) {
+        } catch {
+          if (OFFLINE_OFFICIAL_TASKS.length) {
             applyOfficialCatalog(OFFLINE_OFFICIAL_TASKS, { announce: false });
             state.sync.lastSync = state.sync.lastSync || nowIso();
-            state.sync.error = "Live sync unavailable, loaded offline official snapshot";
-            if (announce) showToast("Live sync unavailable, loaded offline official snapshot");
+            state.sync.error = "Live sync unavailable, using offline snapshot";
+            if (announce) showToast("Live sync unavailable, loaded offline snapshot");
           } else {
-            state.sync.error = "Catalog unavailable, using local dataset";
-            if (announce) {
-              showToast("Catalog sync failed, local data retained");
-            }
+            state.sync.error = "Catalog unavailable, local tasks retained";
+            if (announce) showToast("Catalog sync failed");
           }
         } finally {
           state.sync.loading = false;
@@ -1433,69 +1351,59 @@
         }
       }
 
-      function getProgress(task) {
+      function progress(task) {
         if (!task.objectives.length) return task.completed ? 100 : 0;
-        const completedCount = task.objectives.filter((objective) => objective.done).length;
-        return Math.round((completedCount / task.objectives.length) * 100);
+        const done = task.objectives.filter((objective) => objective.done).length;
+        return Math.round((done / task.objectives.length) * 100);
       }
 
       function filteredTasks() {
-        let list = [...state.tasks];
+        const query = state.filters.query.toLowerCase();
 
-        list = list.filter((task) => {
+        let list = state.tasks.filter((task) => {
           if (state.filters.category !== "all" && task.category !== state.filters.category) return false;
-          if (state.filters.priority !== "all" && task.priority !== state.filters.priority) return false;
           if (state.filters.trader !== "all" && task.trader !== state.filters.trader) return false;
           if (!state.filters.showCompleted && task.completed) return false;
+          if (state.filters.kappaOnly && !task.kappaRequired) return false;
 
-          if (state.filters.query) {
-            const query = state.filters.query.toLowerCase();
-            const searchable = [
+          if (query) {
+            const haystack = [
               task.title,
               task.trader,
               task.map,
               task.description,
               ...task.tags,
               ...task.objectives.map((objective) => objective.text)
-            ]
-              .join(" ")
-              .toLowerCase();
-            if (!searchable.includes(query)) return false;
+            ].join(" ").toLowerCase();
+            if (!haystack.includes(query)) return false;
           }
 
           return true;
         });
 
         list.sort((a, b) => {
-          if (state.sort === "priority") {
-            const pa = priorityRank[a.priority] ?? 10;
-            const pb = priorityRank[b.priority] ?? 10;
-            if (pa !== pb) return pa - pb;
-          }
-
-          if (state.sort === "level") {
-            if (a.level !== b.level) return a.level - b.level;
-          }
-
+          if (state.sort === "level" && a.level !== b.level) return a.level - b.level;
           if (state.sort === "progress") {
-            const ap = getProgress(a);
-            const bp = getProgress(b);
-            if (ap !== bp) return bp - ap;
+            const pa = progress(a);
+            const pb = progress(b);
+            if (pa !== pb) return pb - pa;
           }
-
           if (state.sort === "updated") {
-            const at = new Date(a.updatedAt).getTime();
-            const bt = new Date(b.updatedAt).getTime();
-            if (at !== bt) return bt - at;
+            const ta = new Date(a.updatedAt).getTime();
+            const tb = new Date(b.updatedAt).getTime();
+            if (ta !== tb) return tb - ta;
           }
-
+          if (state.sort === "trader") {
+            const cmp = a.trader.localeCompare(b.trader);
+            if (cmp !== 0) return cmp;
+          }
           return a.title.localeCompare(b.title);
         });
 
         return list;
       }
 
-      function groupTasks(tasks) {
+      function groupedTasks(tasks) {
         if (!state.groupByTrader) {
           const bucket = {
             Trader: tasks.filter((task) => task.category === "trader"),
@@ -1504,59 +1412,50 @@
           };
 
           return Object.entries(bucket)
-            .filter(([, list]) => list.length)
-            .map(([name, list]) => ({ name, tasks: list }));
+            .filter(([, group]) => group.length)
+            .map(([name, group]) => ({ name, tasks: group }));
         }
 
-        const grouped = new Map();
+        const groups = new Map();
         for (const task of tasks) {
-          const groupLabel = task.category === "trader"
-            ? `Trader // ${task.trader}`
-            : `${capitalize(task.category)} // ${task.trader}`;
-
-          if (!grouped.has(groupLabel)) grouped.set(groupLabel, []);
-          grouped.get(groupLabel).push(task);
+          const name = task.category === "trader" ? `Trader // ${task.trader}` : `${capitalize(task.category)} // ${task.trader}`;
+          if (!groups.has(name)) groups.set(name, []);
+          groups.get(name).push(task);
         }
 
-        return [...grouped.entries()].map(([name, groupTasksList]) => ({
-          name,
-          tasks: groupTasksList
-        }));
+        return [...groups.entries()].map(([name, group]) => ({ name, tasks: group }));
       }
 
       function updateTraderSelect() {
         const traders = [...new Set(state.tasks.map((task) => task.trader))].sort((a, b) => a.localeCompare(b));
-        const options = ['<option value="all">All Traders / Chains</option>']
-          .concat(traders.map((trader) => `<option value="${escapeHtml(trader)}">${escapeHtml(trader)}</option>`));
+        refs.traderSelect.innerHTML = ['<option value="all">All Traders / Chains</option>']
+          .concat(traders.map((trader) => `<option value="${escapeHtml(trader)}">${escapeHtml(trader)}</option>`))
+          .join("");
 
-        refs.traderSelect.innerHTML = options.join("");
         refs.traderSelect.value = traders.includes(state.filters.trader) ? state.filters.trader : "all";
       }
 
-      function renderStats(tasks) {
+      function renderStats(visibleTasks) {
         const total = state.tasks.length;
         const completed = state.tasks.filter((task) => task.completed).length;
-        const visible = tasks.length;
-        const official = state.tasks.filter((task) => task.source === "official").length;
-        const storyline = state.tasks.filter((task) => task.category === "storyline").length;
+        const kappaTotal = state.tasks.filter((task) => task.kappaRequired).length;
+        const kappaDone = state.tasks.filter((task) => task.kappaRequired && task.completed).length;
 
-        const stats = [
-          { label: "Total Tasks", value: total, sub: `${visible} visible` },
-          { label: "Completed", value: completed, sub: `${Math.round((completed / Math.max(total, 1)) * 100)}% done` },
-          { label: "Official", value: official, sub: "Synced catalog" },
-          { label: "Storyline", value: storyline, sub: `${total - storyline} trader/custom` }
+        const cards = [
+          { label: "Total", value: total, sub: `${visibleTasks.length} visible` },
+          { label: "Completed", value: completed, sub: `${Math.round((completed / Math.max(total, 1)) * 100)}% progress` },
+          { label: "Kappa Tasks", value: kappaTotal, sub: `${state.filters.kappaOnly ? "Kappa filter active" : "Global count"}` },
+          { label: "Kappa Done", value: kappaDone, sub: `${Math.round((kappaDone / Math.max(kappaTotal, 1)) * 100)}% Kappa` }
         ];
 
-        refs.stats.innerHTML = stats
-          .map((item) => {
-            return `
-              <article class="stat">
-                <p class="label">${escapeHtml(String(item.label))}</p>
-                <p class="value">${escapeHtml(String(item.value))}</p>
-                <p class="sub">${escapeHtml(String(item.sub))}</p>
-              </article>
-            `;
-          })
+        refs.stats.innerHTML = cards
+          .map((card) => `
+            <article class="stat">
+              <p class="label">${escapeHtml(String(card.label))}</p>
+              <p class="value">${escapeHtml(String(card.value))}</p>
+              <p class="sub">${escapeHtml(String(card.sub))}</p>
+            </article>
+          `)
           .join("");
       }
 
@@ -1571,14 +1470,13 @@
           stateLabel = "error";
           text = state.sync.error;
         } else if (state.sync.lastSync) {
-          stateLabel = "ok";
           const stamp = new Date(state.sync.lastSync).toLocaleString([], {
             month: "short",
             day: "2-digit",
             hour: "2-digit",
             minute: "2-digit"
           });
-          text = `Catalog ready (${state.sync.officialCount || 0} official) // ${stamp}`;
+          text = `Catalog ready (${state.sync.officialCount || 0}) // ${stamp}`;
         }
 
         refs.catalogStatus.dataset.state = stateLabel;
@@ -1587,44 +1485,36 @@
         refs.syncCatalogBtn.textContent = state.sync.loading ? "Syncing..." : "Sync Official Catalog";
       }
 
-      function renderGroups(tasks) {
-        const groups = groupTasks(tasks);
+      function renderGroups(visibleTasks) {
+        const groups = groupedTasks(visibleTasks);
 
         if (!groups.length) {
-          refs.groups.innerHTML = '<div class="empty">No tasks match the current filters.</div>';
+          refs.groups.innerHTML = '<div class="empty">No tasks match the current view.</div>';
           return;
         }
 
         refs.groups.innerHTML = groups
           .map((group) => {
-            const taskCards = group.tasks
+            const rows = group.tasks
               .map((task) => {
                 const doneCount = task.objectives.filter((objective) => objective.done).length;
-                const progress = getProgress(task);
+                const pct = progress(task);
 
                 return `
-                  <article class="task ${task.completed ? "completed" : ""} ${
-                  task.id === state.selectedTaskId ? "active" : ""
-                }" data-task-id="${escapeHtml(task.id)}">
-                    <div class="task-top">
-                      <span class="priority-dot" data-priority="${escapeHtml(task.priority)}"></span>
-                      <h4>${escapeHtml(task.title)}</h4>
-                      <button class="done" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}" data-done="${task.completed}">${
-                  task.completed ? "✓" : "○"
-                }</button>
-                    </div>
-                    <div class="meta">
-                      <span class="pill">${escapeHtml(task.trader)}</span>
-                      <span class="pill">${escapeHtml(task.map)}</span>
-                      <span class="pill">LVL ${escapeHtml(String(task.level))}</span>
-                      <span class="pill priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
-                    </div>
-                    <div class="progress">
-                      <div class="progress-head">
-                        <span>${doneCount}/${task.objectives.length} objectives</span>
-                        <span>${progress}%</span>
+                  <article class="mission ${task.completed ? "completed" : ""} ${state.selectedTaskId === task.id ? "active" : ""}" data-task-id="${escapeHtml(task.id)}">
+                    <button class="check" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}" data-done="${task.completed}">${task.completed ? "✓" : "○"}</button>
+                    <div class="mission-main">
+                      <h4 class="mission-title">${escapeHtml(task.title)}</h4>
+                      <div class="mission-meta">
+                        <span class="tag">${escapeHtml(task.trader)}</span>
+                        <span class="tag">${escapeHtml(task.map)}</span>
+                        <span class="tag">Lvl ${escapeHtml(String(task.level))}</span>
+                        ${task.kappaRequired ? '<span class="tag kappa">Kappa Required</span>' : ""}
                       </div>
-                      <div class="bar"><span style="width:${progress}%"></span></div>
+                    </div>
+                    <div class="mission-progress">
+                      <p class="label">${doneCount}/${task.objectives.length} objectives</p>
+                      <div class="bar"><span style="width:${pct}%"></span></div>
                     </div>
                   </article>
                 `;
@@ -1633,11 +1523,11 @@
 
             return `
               <section class="group">
-                <div class="group-head">
+                <header class="group-head">
                   <h3>${escapeHtml(group.name)}</h3>
                   <span>${group.tasks.length} tasks</span>
-                </div>
-                <div class="task-grid">${taskCards}</div>
+                </header>
+                <div class="mission-list">${rows}</div>
               </section>
             `;
           })
@@ -1645,76 +1535,68 @@
       }
 
       function renderDetail() {
-        const task = state.tasks.find((candidate) => candidate.id === state.selectedTaskId);
+        const task = state.tasks.find((item) => item.id === state.selectedTaskId);
 
         if (!task) {
-          refs.detailPane.innerHTML = '<div class="empty">Select a task to open the dossier.</div>';
+          refs.detailPane.innerHTML = '<div class="empty">Select a task to view details.</div>';
           return;
         }
 
-        const progress = getProgress(task);
-        const objectiveMarkup = task.objectives
-          .map((objective) => {
-            return `
-              <li class="objective-item ${objective.done ? "done" : ""}">
-                <input type="checkbox" data-action="toggle-objective" data-task-id="${escapeHtml(task.id)}" data-objective-id="${escapeHtml(objective.id)}" ${
-              objective.done ? "checked" : ""
-            }>
-                <span>${escapeHtml(objective.text)}</span>
-              </li>
-            `;
-          })
+        const pct = progress(task);
+
+        const objectiveItems = task.objectives
+          .map((objective) => `
+            <li class="objective ${objective.done ? "done" : ""}">
+              <input type="checkbox" data-action="toggle-objective" data-task-id="${escapeHtml(task.id)}" data-objective-id="${escapeHtml(objective.id)}" ${objective.done ? "checked" : ""}>
+              <span>${escapeHtml(objective.text)}</span>
+            </li>
+          `)
           .join("");
 
         const wiki = task.wikiLink
-          ? `<a class="link" href="${escapeHtml(task.wikiLink)}" target="_blank" rel="noopener noreferrer">Open Wiki Reference</a>`
+          ? `<a class="wiki" href="${escapeHtml(task.wikiLink)}" target="_blank" rel="noopener noreferrer">Open Wiki Reference</a>`
           : "";
 
         refs.detailPane.innerHTML = `
           <h2>${escapeHtml(task.title)}</h2>
-          <p class="subtitle">${escapeHtml(capitalize(task.category))} // ${escapeHtml(task.trader)}</p>
+          <p class="sub">${escapeHtml(capitalize(task.category))} // ${escapeHtml(task.trader)}</p>
           <p class="desc">${escapeHtml(task.description)}</p>
-          <div class="meta">
-            <span class="pill">Map: ${escapeHtml(task.map)}</span>
-            <span class="pill">Level ${escapeHtml(String(task.level))}</span>
-            <span class="pill priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
-            <span class="pill">${task.completed ? "Completed" : "Active"}</span>
-            <span class="pill">Source: ${escapeHtml(task.source)}</span>
+          <div class="meta-row">
+            <span class="tag">Map: ${escapeHtml(task.map)}</span>
+            <span class="tag">Level ${escapeHtml(String(task.level))}</span>
+            <span class="tag">${task.completed ? "Completed" : "Active"}</span>
+            <span class="tag">Source: ${escapeHtml(task.source)}</span>
+            ${task.kappaRequired ? '<span class="tag kappa">Kappa Required</span>' : '<span class="tag">Not Kappa</span>'}
           </div>
           ${wiki}
-          <div class="progress">
-            <div class="progress-head">
-              <span>Mission progress</span>
-              <span>${progress}%</span>
-            </div>
-            <div class="bar"><span style="width:${progress}%"></span></div>
+          <div class="mission-progress" style="justify-items:start;">
+            <p class="label" style="text-align:left;">Mission progress ${pct}%</p>
+            <div class="bar" style="max-width:none;"><span style="width:${pct}%"></span></div>
           </div>
-          <p class="label">Objectives</p>
-          <ul class="objective-list">${objectiveMarkup}</ul>
-          <button class="btn" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}">
-            ${task.completed ? "Mark Active" : "Mark Complete"}
-          </button>
+          <p class="label-title">Objectives</p>
+          <ul class="objective-list">${objectiveItems}</ul>
+          <button class="btn" data-action="toggle-task" data-task-id="${escapeHtml(task.id)}">${task.completed ? "Mark Active" : "Mark Complete"}</button>
         `;
       }
 
       function renderActivity() {
         if (!state.activity.length) {
-          refs.activityList.innerHTML = '<li class="activity-item">No activity yet.</li>';
+          refs.activityList.innerHTML = '<li class="activity">No activity yet.</li>';
           return;
         }
 
         refs.activityList.innerHTML = state.activity
-          .map((item) => {
-            const stamp = new Date(item.at).toLocaleString([], {
+          .map((entry) => {
+            const stamp = new Date(entry.at).toLocaleString([], {
               month: "short",
               day: "2-digit",
               hour: "2-digit",
               minute: "2-digit"
             });
             return `
-              <li class="activity-item">
-                <time datetime="${escapeHtml(item.at)}">${escapeHtml(stamp)}</time>
-                <span>${escapeHtml(item.text)}</span>
+              <li class="activity">
+                <time datetime="${escapeHtml(entry.at)}">${escapeHtml(stamp)}</time>
+                <span>${escapeHtml(entry.text)}</span>
               </li>
             `;
           })
@@ -1723,17 +1605,21 @@
 
       function renderFilterState() {
         refs.searchInput.value = state.filters.query;
-        refs.prioritySelect.value = state.filters.priority;
         refs.sortSelect.value = state.sort;
+
+        refs.kappaToggle.dataset.on = String(state.filters.kappaOnly);
+        refs.kappaToggle.textContent = `Kappa Only: ${state.filters.kappaOnly ? "On" : "Off"}`;
 
         refs.showCompletedToggle.dataset.on = String(state.filters.showCompleted);
         refs.showCompletedToggle.textContent = `Show Completed: ${state.filters.showCompleted ? "On" : "Off"}`;
 
-        refs.groupByTraderToggle.dataset.on = String(state.groupByTrader);
-        refs.groupByTraderToggle.textContent = `Group: ${state.groupByTrader ? "Trader" : "Category"}`;
+        refs.groupToggle.dataset.on = String(state.groupByTrader);
+        refs.groupToggle.textContent = `Group: ${state.groupByTrader ? "Trader" : "Category"}`;
 
-        refs.categoryChips.querySelectorAll(".chip[data-filter='category']").forEach((chip) => {
-          chip.classList.toggle("active", chip.dataset.value === state.filters.category);
+        refs.kappaBadge.innerHTML = `Kappa Mode <strong>${state.filters.kappaOnly ? "ON" : "OFF"}</strong>`;
+
+        refs.categoryFilters.querySelectorAll(".filter-btn[data-filter='category']").forEach((button) => {
+          button.classList.toggle("active", button.dataset.value === state.filters.category);
         });
       }
 
@@ -1753,24 +1639,22 @@
       }
 
       function rerender() {
-        const visibleTasks = filteredTasks();
+        const visible = filteredTasks();
         updateTraderSelect();
         renderFilterState();
-        renderStats(visibleTasks);
+        renderStats(visible);
         renderCatalogStatus();
-        renderGroups(visibleTasks);
+        renderGroups(visible);
         renderDetail();
         renderActivity();
         saveState();
       }
 
       function toggleTask(taskId) {
-        const task = state.tasks.find((candidate) => candidate.id === taskId);
+        const task = state.tasks.find((item) => item.id === taskId);
         if (!task) return;
 
         task.completed = !task.completed;
-        task.updatedAt = nowIso();
-
         if (task.completed) {
           task.objectives.forEach((objective) => {
             objective.done = true;
@@ -1782,12 +1666,13 @@
           showToast(`Reopened ${task.title}`);
         }
 
+        task.updatedAt = nowIso();
         state.selectedTaskId = task.id;
         rerender();
       }
 
       function toggleObjective(taskId, objectiveId) {
-        const task = state.tasks.find((candidate) => candidate.id === taskId);
+        const task = state.tasks.find((item) => item.id === taskId);
         if (!task) return;
 
         const objective = task.objectives.find((item) => item.id === objectiveId);
@@ -1802,45 +1687,9 @@
         rerender();
       }
 
-      function selectTask(taskId) {
-        if (!state.tasks.some((task) => task.id === taskId)) return;
-        state.selectedTaskId = taskId;
-        rerender();
-      }
-
-      function clearFilters() {
-        state.filters.query = "";
-        state.filters.category = "all";
-        state.filters.priority = "all";
-        state.filters.trader = "all";
-        state.filters.showCompleted = true;
-        state.sort = "priority";
-        state.groupByTrader = true;
-        showToast("Filters reset");
-        rerender();
-      }
-
-      function resetProgress() {
-        const confirmed = window.confirm("Reset completion progress for all tasks?");
-        if (!confirmed) return;
-
-        state.tasks.forEach((task) => {
-          task.completed = false;
-          task.objectives.forEach((objective) => {
-            objective.done = false;
-          });
-          task.updatedAt = nowIso();
-        });
-
-        addActivity("All task progress reset.");
-        showToast("Progress reset");
-        rerender();
-      }
-
       function openModal() {
         refs.taskModal.dataset.open = "true";
-        const input = document.getElementById("formTitle");
-        input?.focus();
+        document.getElementById("formTitle")?.focus();
       }
 
       function closeModal() {
@@ -1848,14 +1697,14 @@
         refs.taskForm.reset();
       }
 
-      function createCustomTask(formData) {
-        const title = String(formData.title || "").trim();
+      function createCustomTask(form) {
+        const title = String(form.title || "").trim();
         if (!title) {
           showToast("Task title is required");
           return;
         }
 
-        const objectiveLines = String(formData.objectives || "")
+        const objectiveLines = String(form.objectives || "")
           .split("\n")
           .map((line) => line.trim())
           .filter(Boolean);
@@ -1864,25 +1713,19 @@
           ? objectiveLines.map((line) => ({ id: uid(), text: line, done: false }))
           : [{ id: uid(), text: "Complete mission objectives", done: false }];
 
-        const category = ["trader", "storyline", "custom"].includes(formData.category)
-          ? formData.category
-          : "custom";
-
-        const priority = ["critical", "high", "medium", "low"].includes(formData.priority)
-          ? formData.priority
-          : "medium";
+        const category = ["trader", "storyline", "custom"].includes(form.category) ? form.category : "custom";
 
         const task = {
           id: `custom:${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           title,
           category,
-          trader: String(formData.trader || "Operations").trim() || "Operations",
-          map: String(formData.map || "Various").trim() || "Various",
-          priority,
-          level: Math.max(1, Number(formData.level) || 1),
-          description: String(formData.description || "No description provided.").trim() || "No description provided.",
+          trader: String(form.trader || "Operations").trim() || "Operations",
+          map: String(form.map || "Various").trim() || "Various",
+          level: Math.max(1, Number(form.level) || 1),
+          description: String(form.description || "No description provided.").trim() || "No description provided.",
           objectives,
           tags: ["custom", category],
+          kappaRequired: Boolean(form.kappaRequired),
           completed: false,
           updatedAt: nowIso(),
           source: "custom",
@@ -1899,18 +1742,18 @@
       function exportTasks() {
         const payload = {
           exportedAt: nowIso(),
-          source: "eft-tracker-tactical-board",
+          source: "eft-tracker-command-edition",
           tasks: state.tasks
         };
 
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `eft_tasks_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `eft_tasks_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
         URL.revokeObjectURL(url);
 
         addActivity("Exported task board JSON.");
@@ -1922,21 +1765,36 @@
           const content = await file.text();
           const parsed = JSON.parse(content);
           const rawTasks = Array.isArray(parsed?.tasks) ? parsed.tasks : parsed;
-          const importedTasks = sanitizeTaskList(rawTasks);
+          const imported = sanitizeTaskList(rawTasks);
 
-          if (!importedTasks.length) {
+          if (!imported.length) {
             showToast("Import failed: no valid tasks found");
             return;
           }
 
-          state.tasks = importedTasks;
-          state.selectedTaskId = state.tasks[0]?.id || null;
-          addActivity(`Imported ${importedTasks.length} tasks from JSON.`);
-          showToast(`Imported ${importedTasks.length} tasks`);
+          state.tasks = imported;
+          state.selectedTaskId = imported[0]?.id || null;
+          addActivity(`Imported ${imported.length} tasks.`);
+          showToast(`Imported ${imported.length} tasks`);
           rerender();
         } catch {
           showToast("Import failed: invalid JSON file");
         }
+      }
+
+      function clearView() {
+        state.filters = {
+          query: "",
+          category: "all",
+          trader: "all",
+          showCompleted: true,
+          kappaOnly: false
+        };
+        state.sort = "updated";
+        state.groupByTrader = true;
+        addActivity("View reset to defaults.");
+        showToast("View reset");
+        rerender();
       }
 
       function hydrate() {
@@ -1947,11 +1805,11 @@
           state.filters = {
             query: String(saved.filters?.query || ""),
             category: saved.filters?.category || "all",
-            priority: saved.filters?.priority || "all",
             trader: saved.filters?.trader || "all",
-            showCompleted: typeof saved.filters?.showCompleted === "boolean" ? saved.filters.showCompleted : true
+            showCompleted: typeof saved.filters?.showCompleted === "boolean" ? saved.filters.showCompleted : true,
+            kappaOnly: typeof saved.filters?.kappaOnly === "boolean" ? saved.filters.kappaOnly : false
           };
-          state.sort = saved.sort || "priority";
+          state.sort = saved.sort || "updated";
           state.groupByTrader = typeof saved.groupByTrader === "boolean" ? saved.groupByTrader : true;
           state.selectedTaskId = saved.selectedTaskId || state.tasks[0]?.id || null;
           state.activity = Array.isArray(saved.activity) ? saved.activity.slice(0, ACTIVITY_LIMIT) : [];
@@ -1980,15 +1838,24 @@
           rerender();
         });
 
-        refs.categoryChips.addEventListener("click", (event) => {
-          const chip = event.target.closest(".chip[data-filter='category']");
-          if (!chip) return;
-          state.filters.category = chip.dataset.value || "all";
+        refs.kappaToggle.addEventListener("click", () => {
+          state.filters.kappaOnly = !state.filters.kappaOnly;
           rerender();
         });
 
-        refs.prioritySelect.addEventListener("change", () => {
-          state.filters.priority = refs.prioritySelect.value;
+        refs.showCompletedToggle.addEventListener("click", () => {
+          state.filters.showCompleted = !state.filters.showCompleted;
+          rerender();
+        });
+
+        refs.syncCatalogBtn.addEventListener("click", () => {
+          syncOfficialCatalog({ forceNetwork: true, announce: true });
+        });
+
+        refs.categoryFilters.addEventListener("click", (event) => {
+          const button = event.target.closest(".filter-btn[data-filter='category']");
+          if (!button) return;
+          state.filters.category = button.dataset.value || "all";
           rerender();
         });
 
@@ -2002,41 +1869,34 @@
           rerender();
         });
 
-        refs.showCompletedToggle.addEventListener("click", () => {
-          state.filters.showCompleted = !state.filters.showCompleted;
-          rerender();
-        });
-
-        refs.groupByTraderToggle.addEventListener("click", () => {
+        refs.groupToggle.addEventListener("click", () => {
           state.groupByTrader = !state.groupByTrader;
           rerender();
         });
 
-        refs.syncCatalogBtn.addEventListener("click", () => {
-          syncOfficialCatalog({ forceNetwork: true, announce: true });
-        });
-
-        refs.clearFiltersBtn.addEventListener("click", clearFilters);
-        refs.resetProgressBtn.addEventListener("click", resetProgress);
+        refs.newTaskBtn.addEventListener("click", openModal);
+        refs.clearFiltersBtn.addEventListener("click", clearView);
 
         refs.groups.addEventListener("click", (event) => {
-          const toggleButton = event.target.closest("[data-action='toggle-task']");
-          if (toggleButton) {
-            toggleTask(toggleButton.dataset.taskId);
+          const toggleBtn = event.target.closest("[data-action='toggle-task']");
+          if (toggleBtn) {
+            toggleTask(toggleBtn.dataset.taskId);
             return;
           }
 
-          const taskCard = event.target.closest(".task");
-          if (taskCard) {
-            selectTask(taskCard.dataset.taskId);
+          const mission = event.target.closest(".mission");
+          if (mission) {
+            const taskId = mission.dataset.taskId;
+            if (state.tasks.some((task) => task.id === taskId)) {
+              state.selectedTaskId = taskId;
+              rerender();
+            }
           }
         });
 
         refs.detailPane.addEventListener("click", (event) => {
-          const toggleButton = event.target.closest("[data-action='toggle-task']");
-          if (toggleButton) {
-            toggleTask(toggleButton.dataset.taskId);
-          }
+          const toggleBtn = event.target.closest("[data-action='toggle-task']");
+          if (toggleBtn) toggleTask(toggleBtn.dataset.taskId);
         });
 
         refs.detailPane.addEventListener("change", (event) => {
@@ -2045,17 +1905,13 @@
           toggleObjective(checkbox.dataset.taskId, checkbox.dataset.objectiveId);
         });
 
-        refs.newTaskBtn.addEventListener("click", openModal);
         refs.closeModalBtn.addEventListener("click", closeModal);
-
         refs.taskModal.addEventListener("click", (event) => {
           if (event.target === refs.taskModal) closeModal();
         });
 
         document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape" && refs.taskModal.dataset.open === "true") {
-            closeModal();
-          }
+          if (event.key === "Escape" && refs.taskModal.dataset.open === "true") closeModal();
         });
 
         refs.taskForm.addEventListener("submit", (event) => {
@@ -2065,10 +1921,10 @@
             category: document.getElementById("formCategory").value,
             trader: document.getElementById("formTrader").value,
             map: document.getElementById("formMap").value,
-            priority: document.getElementById("formPriority").value,
             level: document.getElementById("formLevel").value,
             description: document.getElementById("formDescription").value,
-            objectives: document.getElementById("formObjectives").value
+            objectives: document.getElementById("formObjectives").value,
+            kappaRequired: document.getElementById("formKappaRequired").checked
           });
           closeModal();
         });
@@ -2085,10 +1941,6 @@
         });
       }
 
-      function capitalize(value) {
-        return value.charAt(0).toUpperCase() + value.slice(1);
-      }
-
       function escapeHtml(value) {
         return String(value)
           .replaceAll("&", "&amp;")
@@ -2098,42 +1950,46 @@
           .replaceAll("'", "&#39;");
       }
 
+      function capitalize(value) {
+        return value.charAt(0).toUpperCase() + value.slice(1);
+      }
+
       async function init() {
         hydrate();
         bindEvents();
         updateClock();
         setInterval(updateClock, 1000);
-        const hasLargeCatalog = state.tasks.filter((task) => task.source === "official").length > 100;
-        if (!hasLargeCatalog && OFFLINE_OFFICIAL_TASKS.length > 100) {
+
+        const hasLargeOfficial = state.tasks.filter((task) => task.source === "official").length > 100;
+        if (!hasLargeOfficial && OFFLINE_OFFICIAL_TASKS.length > 100) {
           applyOfficialCatalog(OFFLINE_OFFICIAL_TASKS, { announce: false });
           state.sync.lastSync = nowIso();
           state.sync.error = "";
           state.filters = {
             query: "",
             category: "all",
-            priority: "all",
             trader: "all",
-            showCompleted: true
+            showCompleted: true,
+            kappaOnly: false
           };
-          state.sort = "priority";
+          state.sort = "updated";
           state.groupByTrader = true;
           addActivity(`Offline official snapshot loaded (${OFFLINE_OFFICIAL_TASKS.length} tasks).`);
         }
+
         if (state.tasks.length > 100 && filteredTasks().length === 0) {
           state.filters = {
             query: "",
             category: "all",
-            priority: "all",
             trader: "all",
-            showCompleted: true
+            showCompleted: true,
+            kappaOnly: false
           };
-          state.sort = "priority";
-          state.groupByTrader = true;
-          addActivity("Filters auto-reset to show full catalog.");
+          addActivity("View filters auto-reset to reveal full catalog.");
         }
-        rerender();
 
-        await syncOfficialCatalog({ forceNetwork: !hasLargeCatalog, announce: false });
+        rerender();
+        await syncOfficialCatalog({ forceNetwork: !hasLargeOfficial, announce: false });
       }
 
       init();
