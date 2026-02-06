@@ -10,7 +10,10 @@
 
   html,
   body {
-    background: #0a0c0e !important;
+    background:
+      radial-gradient(130% 110% at 8% -20%, rgba(212, 184, 126, 0.2), transparent 58%),
+      radial-gradient(120% 120% at 100% 120%, rgba(110, 132, 168, 0.14), transparent 54%),
+      linear-gradient(170deg, #0b1018, #0f1520 50%, #0c1119) !important;
   }
 
   #page-container,
@@ -29,33 +32,7 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-  }
-
-  /* Subtle grid + mild warble */
-  #eft-bg-grid {
-    --gx: 0px;
-    --gy: 0px;
-    background:
-      radial-gradient(140% 100% at 50% -10%, rgba(0, 0, 0, 0.35), transparent 60%),
-      radial-gradient(120% 80% at 85% -10%, rgba(214, 185, 134, 0.14), transparent 60%),
-      repeating-linear-gradient(90deg, rgba(214, 185, 134, 0.06) 0 1px, transparent 1px 80px),
-      repeating-linear-gradient(0deg, rgba(214, 185, 134, 0.06) 0 1px, transparent 1px 80px),
-      linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 2px);
-    background-position: 0 0, 0 0, var(--gx) 0, 0 var(--gy), 0 0;
-    animation: gridWobble 7s ease-in-out infinite, scanDrift 18s linear infinite;
-  }
-
-  @keyframes gridWobble {
-    0% { --gx: 0; --gy: 0; }
-    35% { --gx: 1.2px; --gy: 0.8px; }
-    55% { --gx: 1.6px; --gy: 1.2px; }
-    85% { --gx: 0.9px; --gy: 0.5px; }
-    100% { --gx: 0; --gy: 0; }
-  }
-
-  @keyframes scanDrift {
-    0% { background-position: 0 0, 0 0, var(--gx) 0, 0 var(--gy), 0 0; }
-    100% { background-position: 0 3px, 0 0, var(--gx) 0, 0 var(--gy), 0 0; }
+    display: none !important;
   }
 
   #eft-wrap {

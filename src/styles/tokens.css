@@ -1,19 +1,19 @@
 @layer tokens {
   :root {
-    --mainW: 1100px;
+    --mainW: 1120px;
     --gap: 24px;
-    --panel: #121416;
-    --soft: #0e1012;
-    --line: #252a2f;
-    --gold: #d6b986;
-    --gold-2: #a7895f;
-    --text: #d0d6dc;
-    --muted: #8f98a2;
+    --panel: #161d28;
+    --soft: #121823;
+    --line: #2f3a4a;
+    --gold: #d4b87e;
+    --gold-2: #b59761;
+    --text: #e6ebf2;
+    --muted: #a5afbf;
     --danger: #d85e5e;
     --danger-2: #8f2f2f;
     --r: 14px;
     --rsm: 10px;
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+    --shadow: 0 14px 36px rgba(0, 0, 0, 0.48);
   }
 
   @media (max-width: 1600px) {
