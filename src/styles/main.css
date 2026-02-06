@@ -16,6 +16,38 @@
       linear-gradient(170deg, #0b1018, #0f1520 50%, #0c1119) !important;
   }
 
+  /* Subtle CRT layer */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.42) 100%),
+      linear-gradient(rgba(255, 255, 255, 0.012) 50%, rgba(0, 0, 0, 0.14) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.018), rgba(0, 255, 0, 0.008), rgba(0, 0, 255, 0.018));
+    background-size: 100% 100%, 100% 2px, 3px 100%;
+    opacity: 0.26;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.006);
+    opacity: 0;
+    animation: eftCrtFlicker 3.2s infinite;
+  }
+
+  @keyframes eftCrtFlicker {
+    0% { opacity: 0.002; }
+    50% { opacity: 0.007; }
+    100% { opacity: 0.002; }
+  }
+
   #page-container,
   #et-boc,
   body > *:not(#eft-bg-grid):not(#eft-bg-noise) {
