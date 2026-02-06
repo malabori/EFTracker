@@ -766,22 +766,24 @@
 
     .crt-overlay {
       background:
-        radial-gradient(circle, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.42) 100%),
-        linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.22) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.012), rgba(0, 0, 255, 0.03)) !important;
+        radial-gradient(circle, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.6) 100%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)) !important;
       background-size: 100% 100%, 100% 2px, 3px 100% !important;
-      opacity: 0.38 !important;
+      opacity: 1 !important;
+      z-index: 9999 !important;
     }
 
     .crt-flicker {
-      background: rgba(255, 255, 255, 0.01) !important;
-      animation: flickerReadable 2.4s infinite !important;
+      background: rgba(255, 255, 255, 0.02) !important;
+      animation: flickerReadable 0.15s infinite !important;
+      z-index: 9998 !important;
     }
 
     @keyframes flickerReadable {
-      0% { opacity: 0.004; }
-      50% { opacity: 0.013; }
-      100% { opacity: 0.004; }
+      0% { opacity: 0.02; }
+      50% { opacity: 0.05; }
+      100% { opacity: 0.02; }
     }
 
     .frame {

@@ -16,36 +16,36 @@
       linear-gradient(170deg, #0b1018, #0f1520 50%, #0c1119) !important;
   }
 
-  /* Subtle CRT layer */
+  /* CRT overlay */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: 9999;
     pointer-events: none;
     background:
-      radial-gradient(circle, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.42) 100%),
-      linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.22) 50%),
-      linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.012), rgba(0, 0, 255, 0.03));
+      radial-gradient(circle, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.6) 100%),
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
     background-size: 100% 100%, 100% 2px, 3px 100%;
-    opacity: 0.38;
+    opacity: 1;
   }
 
   body::after {
     content: "";
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: 9998;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.01);
+    background: rgba(255, 255, 255, 0.02);
     opacity: 0;
-    animation: eftCrtFlicker 2.4s infinite;
+    animation: eftCrtFlicker 0.15s infinite;
   }
 
   @keyframes eftCrtFlicker {
-    0% { opacity: 0.004; }
-    50% { opacity: 0.013; }
-    100% { opacity: 0.004; }
+    0% { opacity: 0.02; }
+    50% { opacity: 0.05; }
+    100% { opacity: 0.02; }
   }
 
   #page-container,
