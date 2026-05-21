@@ -1,3 +1,5 @@
+import { hi, topoSortByTrader, parsePartIndex } from './lib.js';
+
 const ENDPOINT = 'https://api.tarkov.dev/graphql';
 const EXT_QUERY = `query Tasks { tasks {
     id name type kappaRequired wikiLink trader { id name }
@@ -15,7 +17,6 @@ const ORDER_ROWS = [
   ['BTR Driver', null]
 ];
 
-const DEFUNCT_EXACT = new Set([]);
 const CACHE_KEY = 'eft_tasks_cache_v2';
 const CACHE_TTL = 12 * 60 * 60 * 1000;
 
@@ -204,99 +205,14 @@ const getCache = () => {
 
 const setCache = data => safeLocalStorageSet(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
 
-const isDefunct = t => DEFUNCT_EXACT.has(t.name);
-
-function getPrereqIdsSameTrader(task, traderName) {
-  const reqs = task.taskRequirements || [];
-  const ids = [];
-  for (const r of reqs) {
-    const rt = r.task;
-    const tn = rt?.trader?.name;
-    if (rt && tn === traderName) ids.push(rt.id);
-  }
-  return ids;
-}
-
-function parsePartIndex(name) {
-  const m = name.match(/part\s+(\d+)/i);
-  if (m) return parseInt(m[1], 10);
-  const r = name.match(/part\s+([ivxlcdm]+)/i);
-  if (!r) return Number.POSITIVE_INFINITY;
-  const map = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
-  let n = 0;
-  let p = 0;
-  const s = r[1].toLowerCase();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const v = map[s[i]] || 0;
-    n += v < p ? -v : v;
-    p = v;
-  }
-  return n;
-}
-
-function topoSortByTrader(list, name) {
-  const nodes = new Map();
-  list.forEach(t => nodes.set(t.id, t));
-  const deg = new Map();
-  const adj = new Map();
-  list.forEach(t => {
-    deg.set(t.id, 0);
-    adj.set(t.id, []);
-  });
-  list.forEach(t => {
-    getPrereqIdsSameTrader(t, name).forEach(pid => {
-      if (!nodes.has(pid)) return;
-      adj.get(pid).push(t.id);
-      deg.set(t.id, (deg.get(t.id) || 0) + 1);
-    });
-  });
-  const tie = (a, b) => {
-    const al = a.minPlayerLevel ?? 0;
-    const bl = b.minPlayerLevel ?? 0;
-    if (al !== bl) return al - bl;
+function orderForTrader(list, name) {
+  if (state.extended) return topoSortByTrader(list, name);
+  return list.slice().sort((a, b) => {
     const ap = parsePartIndex(a.name);
     const bp = parsePartIndex(b.name);
     if (ap !== bp) return ap - bp;
     return a.name.localeCompare(b.name);
-  };
-  const q = [];
-  deg.forEach((d, id) => {
-    if (d === 0) q.push(id);
   });
-  q.sort((a, b) => tie(nodes.get(a), nodes.get(b)));
-  const out = [];
-  while (q.length) {
-    const id = q.shift();
-    out.push(nodes.get(id));
-    for (const v of adj.get(id)) {
-      deg.set(v, deg.get(v) - 1);
-      if (deg.get(v) === 0) {
-        q.push(v);
-        q.sort((a, b) => tie(nodes.get(a), nodes.get(b)));
-      }
-    }
-  }
-  if (out.length !== list.length) {
-    const left = list.filter(t => !out.includes(t)).sort(tie);
-    return out.concat(left);
-  }
-  return out;
-}
-
-function orderForTrader(list, name) {
-  const alive = list.filter(t => !isDefunct(t));
-  const dead = list.filter(t => isDefunct(t));
-  const ordered = state.extended
-    ? topoSortByTrader(alive, name)
-    : alive
-        .slice()
-        .sort((a, b) => {
-          const ap = parsePartIndex(a.name);
-          const bp = parsePartIndex(b.name);
-          if (ap !== bp) return ap - bp;
-          return a.name.localeCompare(b.name);
-        });
-  return ordered.concat(dead);
 }
 
 function stats() {
@@ -306,16 +222,6 @@ function stats() {
   const kDone = state.tasks.filter(t => t.kappaRequired && state.done[t.id]).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   return { total, done, kAll, kDone, pct };
-}
-
-function escReg(s) {
-  return s.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-}
-
-function hi(text, q) {
-  if (!q) return text;
-  const r = new RegExp(`(${escReg(q)})`, 'ig');
-  return text.replace(r, '<mark class="eft-hit">$1</mark>');
 }
 
 function groups() {
@@ -412,7 +318,8 @@ function fireConfetti() {
     c.height = innerHeight * DPR;
   }
   rs();
-  addEventListener('resize', rs, { passive: true });
+  const onResize = () => rs();
+  addEventListener('resize', onResize, { passive: true });
   const count = Math.min(300, innerWidth < 600 ? 140 : 260);
   const colors = ['#d6b986', '#a7895f', '#90a4ae', '#cfd8dc', '#7fb27f', '#e57373'];
   const parts = Array.from({ length: count }, () => ({
@@ -442,7 +349,10 @@ function fireConfetti() {
       ctx.restore();
     });
     if (t - t0 < DUR) requestAnimationFrame(tick);
-    else c.remove();
+    else {
+      removeEventListener('resize', onResize);
+      c.remove();
+    }
   })(t0);
 }
 
@@ -638,8 +548,7 @@ function renderColumnsOnly(scrollToFirst = false) {
 
     const wrap = el('div', { class: 'task-wrap' });
     for (const t of list) {
-      const def = isDefunct(t);
-      const row = el('div', { class: 'task' + (state.done[t.id] ? ' done' : '') + (def ? ' defunct' : '') });
+      const row = el('div', { class: 'task' + (state.done[t.id] ? ' done' : '') });
       const top = el('div', { class: 'task-row' });
       const cb = el('input', { type: 'checkbox', checked: !!state.done[t.id] });
       cb.addEventListener('change', e => {
@@ -656,7 +565,6 @@ function renderColumnsOnly(scrollToFirst = false) {
 
       const badges = document.createDocumentFragment();
       if (t.kappaRequired) badges.append(el('span', { class: 't-kappa' }, 'Kappa'));
-      if (def) badges.append(el('span', { class: 'badge-defunct', 'data-tip': 'Limited-time event quest — no longer completable' }, 'Defunct'));
 
       top.append(cb, text, badges);
       row.append(top);
@@ -811,14 +719,17 @@ function setupNav() {
   });
 }
 
-async function load(isRetry = false) {
-  if (!isRetry) render();
+function setupViewportListeners() {
   addEventListener('resize', positionSidebar, { passive: true });
   addEventListener('scroll', onScrollRaf, { passive: true });
   if (window.visualViewport) {
     visualViewport.addEventListener('resize', positionSidebar);
     visualViewport.addEventListener('scroll', positionSidebar);
   }
+}
+
+async function load(isRetry = false) {
+  if (!isRetry) render();
 
   const cached = getCache();
   if (cached && !isRetry) {
@@ -859,6 +770,7 @@ function init() {
   initBackground();
   ensureShell();
   setupNav();
+  setupViewportListeners();
   load();
 }
 

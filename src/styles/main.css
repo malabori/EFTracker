@@ -452,58 +452,6 @@
     background: rgba(214, 185, 134, 0.08);
   }
 
-  .badge-defunct {
-    margin-left: 8px;
-    font-size: 11px;
-    color: #fff;
-    border: 1px solid var(--danger-2);
-    padding: 2px 8px;
-    border-radius: 8px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    background: var(--danger);
-    position: relative;
-    cursor: help;
-  }
-
-  .badge-defunct::after {
-    content: attr(data-tip);
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(100% + 8px);
-    background: #0c0f11;
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 8px 10px;
-    white-space: nowrap;
-    font-size: 12px;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: var(--shadow);
-    transition: opacity 0.15s;
-  }
-
-  .badge-defunct::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 100%;
-    border: 6px solid transparent;
-    border-top-color: #0c0f11;
-    margin-bottom: 2px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  .badge-defunct:hover::after,
-  .badge-defunct:hover::before { opacity: 1; }
-
-  .task.defunct { border-color: var(--danger-2); background: #151012; }
-  .task.defunct .t-name { color: #e7bcbc; text-decoration: line-through; text-decoration-thickness: 1px; }
-
   .t-tools { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
   .mini-btn { background: var(--soft); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 13px; cursor: pointer; text-decoration: none; }
   .mini-btn:hover { border-color: var(--gold-2); color: var(--gold); }
