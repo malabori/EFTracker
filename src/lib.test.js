@@ -54,16 +54,12 @@ describe('hi', () => {
   });
 
   it('is case-insensitive', () => {
-    expect(hi('Find Me', 'me')).toBe(
-      'Find <mark class="eft-hit">Me</mark>'
-    );
+    expect(hi('Find Me', 'me')).toBe('Find <mark class="eft-hit">Me</mark>');
   });
 
   it('handles regex metacharacters in the query without throwing', () => {
     expect(() => hi('open ( paren', '(')).not.toThrow();
-    expect(hi('open ( paren', '(')).toContain(
-      '<mark class="eft-hit">(</mark>'
-    );
+    expect(hi('open ( paren', '(')).toContain('<mark class="eft-hit">(</mark>');
   });
 
   it('returns the escaped text when query is empty', () => {
@@ -141,10 +137,7 @@ describe('topoSortByTrader', () => {
   });
 
   it('still returns every task when a cycle exists', () => {
-    const list = [
-      mk('a', 'A', { prereqs: ['b'] }),
-      mk('b', 'B', { prereqs: ['a'] })
-    ];
+    const list = [mk('a', 'A', { prereqs: ['b'] }), mk('b', 'B', { prereqs: ['a'] })];
     const out = topoSortByTrader(list, 'T');
     expect(out.map(t => t.id).sort()).toEqual(['a', 'b']);
   });
@@ -155,9 +148,7 @@ describe('topoSortByTrader', () => {
         id: 'x',
         name: 'X',
         minPlayerLevel: 0,
-        taskRequirements: [
-          { task: { id: 'other', trader: { name: 'OtherTrader' } } }
-        ]
+        taskRequirements: [{ task: { id: 'other', trader: { name: 'OtherTrader' } } }]
       }
     ];
     expect(topoSortByTrader(list, 'T').map(t => t.id)).toEqual(['x']);
@@ -179,10 +170,14 @@ describe('topoSortByTrader', () => {
     // this case exercises that.
     const list = [mk('root', 'Root')];
     for (let i = 0; i < 500; i++) {
-      list.push(mk(`leaf${i}`, `Leaf ${String(i).padStart(3, '0')}`, { prereqs: ['root'] }));
+      list.push(
+        mk(`leaf${i}`, `Leaf ${String(i).padStart(3, '0')}`, { prereqs: ['root'] })
+      );
     }
     for (let i = 0; i < 500; i++) {
-      list.push(mk(`child${i}`, `Child ${String(i).padStart(3, '0')}`, { prereqs: ['leaf0'] }));
+      list.push(
+        mk(`child${i}`, `Child ${String(i).padStart(3, '0')}`, { prereqs: ['leaf0'] })
+      );
     }
     const t0 = performance.now();
     const out = topoSortByTrader(list, 'T');

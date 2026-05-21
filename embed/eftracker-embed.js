@@ -1,6 +1,6 @@
-(function(){
+(function () {
   class EFTrackerEmbed extends HTMLElement {
-    async connectedCallback(){
+    async connectedCallback() {
       const src = this.getAttribute('src');
       if (!src) return;
       try {
@@ -11,7 +11,8 @@
         // Re-execute any scripts inside the injected HTML
         this.querySelectorAll('script').forEach(old => {
           const s = document.createElement('script');
-          for (const {name, value} of Array.from(old.attributes)) s.setAttribute(name, value);
+          for (const { name, value } of Array.from(old.attributes))
+            s.setAttribute(name, value);
           s.textContent = old.textContent;
           old.replaceWith(s);
         });
