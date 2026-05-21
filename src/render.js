@@ -4,6 +4,7 @@ import { state, refs, saveProgress, saveUI, CELEBRATED_KEY } from './state.js';
 import { safeLocalStorageRemove, safeLocalStorageSet } from './storage.js';
 import { fireConfetti } from './confetti.js';
 import { getNextUp, mapsForTask, repRewardsForTask } from './recommendations.js';
+import { openPalette } from './palette.js';
 
 const ORDER_ROWS = [
   ['Prapor', 'Therapist'],
@@ -223,6 +224,118 @@ function maybeCelebrate() {
       { label: 'Export progress', onClick: exportProgress }
     ]);
   }
+}
+
+// Builds the command list the palette searches against. Recomputed
+// every time the palette opens so freshly-loaded tasks show up.
+export function getPaletteCommands() {
+  const cmds = [
+    {
+      kind: 'action',
+      label: 'Open briefing',
+      hint: 'View',
+      run: () => setView('briefing')
+    },
+    {
+      kind: 'action',
+      label: 'Open list view',
+      hint: 'View',
+      run: () => setView('list')
+    },
+    {
+      kind: 'action',
+      label: 'Toggle Kappa only',
+      hint: 'Filter',
+      run: () => {
+        state.kappaOnly = !state.kappaOnly;
+      }
+    },
+    {
+      kind: 'action',
+      label: 'Toggle show completed',
+      hint: 'Filter',
+      run: () => {
+        state.showCompleted = !state.showCompleted;
+      }
+    },
+    {
+      kind: 'action',
+      label: 'Import progress',
+      hint: 'Data',
+      run: importProgress
+    },
+    {
+      kind: 'action',
+      label: 'Export progress',
+      hint: 'Data',
+      run: exportProgress
+    },
+    {
+      kind: 'action',
+      label: 'Reset all progress',
+      hint: 'Danger',
+      run: () => {
+        showToast(
+          'Reset all progress?',
+          [
+            {
+              label: 'Confirm',
+              onClick: () => {
+                hideToast();
+                state.done = {};
+                state.celebrated = false;
+                safeLocalStorageRemove(CELEBRATED_KEY);
+                saveProgress();
+                render();
+              }
+            },
+            { label: 'Cancel', onClick: hideToast }
+          ],
+          { persistent: true }
+        );
+      }
+    }
+  ];
+
+  // One command per trader → opens that trader's dossier.
+  const traders = [
+    ...new Set(state.tasks.map(t => t.trader?.name).filter(Boolean))
+  ].sort();
+  for (const name of traders) {
+    cmds.push({
+      kind: 'trader',
+      label: name,
+      hint: 'Open dossier',
+      run: () => openTraderDossier(name)
+    });
+  }
+
+  // Quests — only incomplete ones, to keep results punchy. Completed
+  // tasks fall out of the day-to-day search surface; finding a done
+  // task is still possible via the in-list search.
+  for (const t of state.tasks) {
+    if (state.done[t.id]) continue;
+    cmds.push({
+      kind: 'quest',
+      label: t.name,
+      hint: t.trader?.name || 'Quest',
+      run: () => focusTask(t)
+    });
+  }
+
+  return cmds;
+}
+
+function showShortcutsToast() {
+  showToast(
+    'Cmd/Ctrl+K palette · / search · ? help · Esc close',
+    [{ label: 'Dismiss', onClick: hideToast }],
+    { persistent: true }
+  );
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('eft:show-shortcuts', showShortcutsToast);
 }
 
 function updateStatsDOM() {
@@ -806,6 +919,29 @@ export function render() {
     )
   );
 
+  const paletteBtn = el(
+    'button',
+    {
+      class: 'btn palette-btn',
+      type: 'button',
+      title: 'Command palette (Cmd/Ctrl + K)',
+      onclick: () => openPalette()
+    },
+    el('span', {}, 'Search'),
+    el('kbd', { class: 'kbd-hint' }, '⌘K')
+  );
+
+  const helpBtn = el(
+    'button',
+    {
+      class: 'btn',
+      type: 'button',
+      title: 'Keyboard shortcuts (?)',
+      onclick: showShortcutsToast
+    },
+    '?'
+  );
+
   const bar = el(
     'div',
     { class: 'bar', id: 'eft-bar' },
@@ -815,10 +951,12 @@ export function render() {
     kappaOnly,
     showCompleted,
     searchBox,
+    paletteBtn,
     importBtn,
     exportBtn,
     reset,
-    collapseAll
+    collapseAll,
+    helpBtn
   );
 
   const contentArea = el('div', { id: 'eft-content' });

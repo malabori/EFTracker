@@ -43,6 +43,12 @@ const SHELL_HTML = `
       <div id="eft-cw"><div class="shell" id="eft-shell"></div></div>
       <div id="eft-toast"><span id="eft-toast-msg"></span><span class="toast-actions"></span></div>
     </div>
+    <nav id="eft-mobile-nav" aria-label="Bottom navigation">
+      <button type="button" data-mnav="briefing"><span class="mnav-glyph">◫</span><span>Briefing</span></button>
+      <button type="button" data-mnav="list"><span class="mnav-glyph">≡</span><span>List</span></button>
+      <button type="button" data-mnav="search"><span class="mnav-glyph">⌕</span><span>Search</span></button>
+      <button type="button" data-mnav="menu"><span class="mnav-glyph">☰</span><span>Menu</span></button>
+    </nav>
   `;
 
 export function ensureShell() {
