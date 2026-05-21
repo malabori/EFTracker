@@ -57,24 +57,44 @@ export function getPrereqIdsSameTrader(task, traderName) {
   return ids;
 }
 
+// Topological order by "tier" depth: a task's depth is one more than the
+// max depth of its same-trader prerequisites. Sorting by (depth, level,
+// part index, name) gives a single O(n + E + n log n) ordering that
+// always places prereqs before dependents. On cycles, depth falls back to
+// 0 for the cycle members so they still appear in a stable position.
 export function topoSortByTrader(list, name) {
-  const nodes = new Map();
-  const deg = new Map();
-  const adj = new Map();
-  list.forEach(t => {
-    nodes.set(t.id, t);
-    deg.set(t.id, 0);
-    adj.set(t.id, []);
-  });
-  list.forEach(t => {
-    getPrereqIdsSameTrader(t, name).forEach(pid => {
-      if (!nodes.has(pid)) return;
-      adj.get(pid).push(t.id);
-      deg.set(t.id, deg.get(t.id) + 1);
-    });
-  });
+  const prereqs = new Map();
+  const inList = new Set(list.map(t => t.id));
+  for (const t of list) {
+    prereqs.set(
+      t.id,
+      getPrereqIdsSameTrader(t, name).filter(pid => inList.has(pid))
+    );
+  }
 
-  const tie = (a, b) => {
+  const depths = new Map();
+  const visiting = new Set();
+  const depthOf = id => {
+    const cached = depths.get(id);
+    if (cached !== undefined) return cached;
+    if (visiting.has(id)) return 0;
+    visiting.add(id);
+    let max = 0;
+    for (const pid of prereqs.get(id)) {
+      const d = depthOf(pid) + 1;
+      if (d > max) max = d;
+    }
+    visiting.delete(id);
+    depths.set(id, max);
+    return max;
+  };
+
+  for (const t of list) depthOf(t.id);
+
+  return list.slice().sort((a, b) => {
+    const da = depths.get(a.id);
+    const db = depths.get(b.id);
+    if (da !== db) return da - db;
     const al = a.minPlayerLevel ?? 0;
     const bl = b.minPlayerLevel ?? 0;
     if (al !== bl) return al - bl;
@@ -82,37 +102,5 @@ export function topoSortByTrader(list, name) {
     const bp = parsePartIndex(b.name);
     if (ap !== bp) return ap - bp;
     return a.name.localeCompare(b.name);
-  };
-
-  // Single sort up front; ready queue stays small enough that
-  // resorting on insertion is cheap, but avoid the worst case by
-  // only sorting when we actually add new entries.
-  const ready = [];
-  deg.forEach((d, id) => {
-    if (d === 0) ready.push(id);
   });
-  ready.sort((a, b) => tie(nodes.get(a), nodes.get(b)));
-
-  const out = [];
-  const seen = new Set();
-  while (ready.length) {
-    const id = ready.shift();
-    out.push(nodes.get(id));
-    seen.add(id);
-    let added = false;
-    for (const v of adj.get(id)) {
-      deg.set(v, deg.get(v) - 1);
-      if (deg.get(v) === 0) {
-        ready.push(v);
-        added = true;
-      }
-    }
-    if (added) ready.sort((a, b) => tie(nodes.get(a), nodes.get(b)));
-  }
-
-  if (out.length !== list.length) {
-    const left = list.filter(t => !seen.has(t.id)).sort(tie);
-    return out.concat(left);
-  }
-  return out;
 }

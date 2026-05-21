@@ -160,38 +160,9 @@ function initBackground() {
   }
 
   if (!document.getElementById('eft-bg-noise')) {
-    const c = document.createElement('canvas');
-    c.id = 'eft-bg-noise';
-    document.body.appendChild(c);
-    const x = c.getContext('2d', { alpha: true });
-    const DPR = Math.min(2, window.devicePixelRatio || 1);
-    function size() {
-      c.width = innerWidth * DPR;
-      c.height = innerHeight * DPR;
-    }
-    size();
-    addEventListener('resize', size, { passive: true });
-    let interval = matchMedia('(max-width: 600px)').matches ? 120 : 90;
-    function frame() {
-      const w = c.width;
-      const h = c.height;
-      const img = x.createImageData(w, h);
-      const d = img.data;
-      for (let i = 0; i < w * h; i += 8) {
-        const v = Math.floor(Math.random() * 255);
-        const o = i * 4;
-        d[o] = v;
-        d[o + 1] = v;
-        d[o + 2] = v;
-        d[o + 3] = 12;
-      }
-      x.putImageData(img, 0, 0);
-    }
-    let tid = setInterval(frame, interval);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) clearInterval(tid);
-      else tid = setInterval(frame, interval);
-    });
+    const n = document.createElement('div');
+    n.id = 'eft-bg-noise';
+    document.body.appendChild(n);
   }
 }
 
@@ -215,38 +186,118 @@ function orderForTrader(list, name) {
   });
 }
 
+// Cache the trader-grouped + topo-sorted view of state.tasks. This only
+// changes when a new task payload arrives (state.tasks reference flips)
+// or when we switch between extended/basic GraphQL data. Search,
+// filters, and progress all just filter against this cached structure.
+let orderedGroupsCache = { tasks: null, extended: null, byTrader: null };
+
+function orderedGroups() {
+  if (
+    orderedGroupsCache.tasks === state.tasks &&
+    orderedGroupsCache.extended === state.extended &&
+    orderedGroupsCache.byTrader
+  ) {
+    return orderedGroupsCache.byTrader;
+  }
+  const byTrader = new Map();
+  for (const t of state.tasks) {
+    const trader = t.trader?.name || 'Unknown';
+    if (!byTrader.has(trader)) byTrader.set(trader, []);
+    byTrader.get(trader).push(t);
+  }
+  for (const [n, list] of byTrader) {
+    byTrader.set(n, orderForTrader(list, n));
+  }
+  orderedGroupsCache = { tasks: state.tasks, extended: state.extended, byTrader };
+  return byTrader;
+}
+
 function stats() {
+  let done = 0;
+  let kAll = 0;
+  let kDone = 0;
+  for (const t of state.tasks) {
+    const isDone = !!state.done[t.id];
+    if (isDone) done++;
+    if (t.kappaRequired) {
+      kAll++;
+      if (isDone) kDone++;
+    }
+  }
   const total = state.tasks.length;
-  const done = state.tasks.reduce((n, t) => n + (state.done[t.id] ? 1 : 0), 0);
-  const kAll = state.tasks.filter(t => t.kappaRequired).length;
-  const kDone = state.tasks.filter(t => t.kappaRequired && state.done[t.id]).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   return { total, done, kAll, kDone, pct };
 }
 
+function updateStatsDOM() {
+  const statsEl = document.getElementById('eft-stats');
+  if (!statsEl) return;
+  const s = stats();
+  const nums = statsEl.querySelectorAll('.stat .num');
+  if (nums[0]) nums[0].textContent = String(s.done);
+  if (nums[1]) nums[1].textContent = String(s.total);
+  if (nums[2]) nums[2].textContent = `${s.kDone}/${s.kAll}`;
+  if (nums[3]) nums[3].textContent = `${s.pct}%`;
+}
+
+function updateSectionCountDOM(traderName) {
+  if (!refs.app) return;
+  const sections = refs.app.querySelectorAll('.section');
+  let sec = null;
+  for (const s of sections) {
+    if (s.getAttribute('data-trader') === traderName) {
+      sec = s;
+      break;
+    }
+  }
+  if (!sec) return;
+  const list = groups().get(traderName);
+  const countEl = sec.querySelector('.sec-count');
+  if (!countEl) return;
+  if (!list) {
+    countEl.textContent = '0/0';
+    return;
+  }
+  const done = list.reduce((n, t) => n + (state.done[t.id] ? 1 : 0), 0);
+  countEl.textContent = `${done}/${list.length}`;
+}
+
+function toggleTaskDone(task, traderName, rowEl, checked) {
+  state.done[task.id] = checked;
+  saveProgress();
+  rowEl.classList.toggle('done', checked);
+  updateStatsDOM();
+  updateSectionCountDOM(traderName);
+  // If completed tasks are hidden, the row needs to disappear — fall
+  // back to a columns rebuild for that case only.
+  if (!state.showCompleted && checked) {
+    renderColumnsOnly();
+  }
+  maybeCelebrate();
+}
+
 function groups() {
   const q = state.search.trim().toLowerCase();
-  const map = new Map();
-  for (const t of state.tasks) {
-    const trader = t.trader?.name || 'Unknown';
+  const out = new Map();
+  for (const [trader, list] of orderedGroups()) {
     if (state.traderFilter !== 'ALL' && state.traderFilter !== trader) continue;
-    if (state.kappaOnly && !t.kappaRequired) continue;
-    if (!state.showCompleted && state.done[t.id]) continue;
-
-    if (q) {
-      const hit =
-        t.name.toLowerCase().includes(q) ||
-        (t.trader?.name || '').toLowerCase().includes(q) ||
-        (t.objectives || []).some(o => o?.description?.toLowerCase().includes(q));
-      if (!hit) continue;
+    const filtered = [];
+    for (const t of list) {
+      if (state.kappaOnly && !t.kappaRequired) continue;
+      if (!state.showCompleted && state.done[t.id]) continue;
+      if (q) {
+        const hit =
+          t.name.toLowerCase().includes(q) ||
+          (t.trader?.name || '').toLowerCase().includes(q) ||
+          (t.objectives || []).some(o => o?.description?.toLowerCase().includes(q));
+        if (!hit) continue;
+      }
+      filtered.push(t);
     }
-    if (!map.has(trader)) map.set(trader, []);
-    map.get(trader).push(t);
+    if (filtered.length) out.set(trader, filtered);
   }
-  for (const [n, list] of map) {
-    map.set(n, orderForTrader(list, n));
-  }
-  return map;
+  return out;
 }
 
 function buildColumnOrder(present) {
@@ -551,11 +602,7 @@ function renderColumnsOnly(scrollToFirst = false) {
       const row = el('div', { class: 'task' + (state.done[t.id] ? ' done' : '') });
       const top = el('div', { class: 'task-row' });
       const cb = el('input', { type: 'checkbox', checked: !!state.done[t.id] });
-      cb.addEventListener('change', e => {
-        state.done[t.id] = e.target.checked;
-        saveProgress();
-        render();
-      });
+      cb.addEventListener('change', e => toggleTaskDone(t, name, row, e.target.checked));
 
       const firstObj = t.objectives?.[0]?.description || '';
       const nameHtml = hi(t.name, q);

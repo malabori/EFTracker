@@ -162,4 +162,33 @@ describe('topoSortByTrader', () => {
     ];
     expect(topoSortByTrader(list, 'T').map(t => t.id)).toEqual(['x']);
   });
+
+  it('respects prereq order across a long chain regardless of input order', () => {
+    const N = 50;
+    const list = [];
+    for (let i = N - 1; i >= 0; i--) {
+      list.push(mk(`q${i}`, `Q${i}`, { prereqs: i > 0 ? [`q${i - 1}`] : [] }));
+    }
+    const ids = topoSortByTrader(list, 'T').map(t => t.id);
+    for (let i = 0; i < N; i++) expect(ids[i]).toBe(`q${i}`);
+  });
+
+  it('completes a large fan-in/fan-out graph quickly', () => {
+    // 500 leaf tasks all depending on one root, plus 500 children of the
+    // first leaf. Old impl re-sorted the ready queue on every insertion;
+    // this case exercises that.
+    const list = [mk('root', 'Root')];
+    for (let i = 0; i < 500; i++) {
+      list.push(mk(`leaf${i}`, `Leaf ${String(i).padStart(3, '0')}`, { prereqs: ['root'] }));
+    }
+    for (let i = 0; i < 500; i++) {
+      list.push(mk(`child${i}`, `Child ${String(i).padStart(3, '0')}`, { prereqs: ['leaf0'] }));
+    }
+    const t0 = performance.now();
+    const out = topoSortByTrader(list, 'T');
+    const elapsed = performance.now() - t0;
+    expect(out).toHaveLength(list.length);
+    expect(out[0].id).toBe('root');
+    expect(elapsed).toBeLessThan(100);
+  });
 });
