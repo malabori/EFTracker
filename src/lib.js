@@ -50,6 +50,23 @@ export function parsePartIndex(name) {
   return n;
 }
 
+// Validates an imported progress payload. The Tarkov.dev quest list
+// gives every task a non-empty id, and a completion entry is just a
+// boolean against that id, so the safest schema is "object whose keys
+// are non-empty strings and whose values are booleans". Returns the
+// normalized object on success (dropping bad entries silently) or
+// throws on a non-object input.
+export function normalizeProgressPayload(raw) {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new Error('Expected an object of { taskId: boolean }');
+  }
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof k === 'string' && k && typeof v === 'boolean') out[k] = v;
+  }
+  return out;
+}
+
 export function getPrereqIdsSameTrader(task, traderName) {
   const reqs = task.taskRequirements || [];
   const ids = [];

@@ -42,24 +42,26 @@ src/
   state.js         shared singleton state + DOM refs
   storage.js       safe localStorage wrappers
   api.js           Tarkov.dev fetch + 12 h cache
-  lib.js           pure helpers (escape, hi, parsePartIndex, topoSortByTrader)
+  lib.js           pure helpers (escape, hi, parsePartIndex,
+                   topoSortByTrader, normalizeProgressPayload)
   dom.js           el() — small element builder
   shell.js         outer HTML shell template + ref binding
   background.js    background grid + noise <div>s
   confetti.js      kappa-celebration canvas animation
-  sidebar.js       JS-driven sticky sidebar positioning
   nav.js           mobile burger menu
-  render.js        all task-list rendering, stats, toast, partial updates
+  render.js        all task-list rendering, stats, toast, partial updates,
+                   import/export, styled confirm
   lib.test.js      Vitest suite for the pure helpers
   styles/
-    main.css       layered CSS (base, layout, components, utilities)
+    main.css       layered CSS (base, layout, components, utilities) —
+                   sidebar is CSS-grid + position: sticky
     tokens.css     design tokens + @property registrations
 
 embed/
-  eftracker-embed.js   <eftracker-embed src="…"> web component that
-                       inlines a remote HTML file into a host page
-                       (used to embed the built app into the marketing
-                       site).
+  eftracker-embed.js   <eftracker-embed src="…" allowed-hosts="a,b">
+                       web component that inlines a remote HTML file
+                       into a host page. Defaults to same-origin only;
+                       cross-origin requires allowed-hosts opt-in.
 
 wp/
   eftracker-wp.css     WordPress skin applied to blog/archive/single

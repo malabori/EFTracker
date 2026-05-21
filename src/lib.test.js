@@ -5,7 +5,8 @@ import {
   hi,
   parsePartIndex,
   getPrereqIdsSameTrader,
-  topoSortByTrader
+  topoSortByTrader,
+  normalizeProgressPayload
 } from './lib.js';
 
 describe('escapeHtml', () => {
@@ -185,5 +186,27 @@ describe('topoSortByTrader', () => {
     expect(out).toHaveLength(list.length);
     expect(out[0].id).toBe('root');
     expect(elapsed).toBeLessThan(100);
+  });
+});
+
+describe('normalizeProgressPayload', () => {
+  it('drops non-boolean values and non-string keys', () => {
+    const raw = { a: true, b: false, c: 1, d: 'yes', e: null, f: true };
+    expect(normalizeProgressPayload(raw)).toEqual({ a: true, b: false, f: true });
+  });
+
+  it('rejects non-objects', () => {
+    expect(() => normalizeProgressPayload(null)).toThrow();
+    expect(() => normalizeProgressPayload([])).toThrow();
+    expect(() => normalizeProgressPayload('not json')).toThrow();
+    expect(() => normalizeProgressPayload(42)).toThrow();
+  });
+
+  it('returns an empty object for {}', () => {
+    expect(normalizeProgressPayload({})).toEqual({});
+  });
+
+  it('drops empty-string keys', () => {
+    expect(normalizeProgressPayload({ '': true, x: true })).toEqual({ x: true });
   });
 });

@@ -115,12 +115,23 @@
     padding: 28px 0;
   }
 
-  /* Desktop sidebar (left), symmetric spacing enforced by JS */
-  #eft-side {
-    position: fixed;
-    left: var(--gap);
-    top: 0;
-    z-index: 5;
+  /* On wide viewports the wrap becomes a two-column grid (sidebar | content)
+     so the sidebar can stick via plain CSS — no JS positioning. The
+     fixed-position children (burger, offcanvas, toast) stay out of grid
+     flow naturally. */
+  @media (min-width: 1401px) {
+    #eft-wrap {
+      display: grid;
+      grid-template-columns: var(--side-w) minmax(0, 1fr);
+      column-gap: var(--gap);
+      align-items: start;
+    }
+    #eft-side {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      z-index: 5;
+    }
   }
 
   #eft-side .bubble {
@@ -355,6 +366,39 @@
     }
   }
 
+  .trader-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 16px;
+  }
+
+  .trader-stats:empty {
+    display: none;
+  }
+
+  .trader-chip {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .trader-chip .trader-chip-name {
+    color: var(--text);
+    margin-right: 6px;
+  }
+
+  .trader-chip .trader-chip-num {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
   .bar {
     position: sticky;
     top: 12px;
@@ -550,6 +594,8 @@
     padding: 10px 12px;
     overflow: auto;
     flex: 1;
+    list-style: none;
+    margin: 0;
   }
   .section.is-collapsed .task-wrap {
     display: none;

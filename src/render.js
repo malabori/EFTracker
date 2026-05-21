@@ -1,8 +1,7 @@
-import { hi, topoSortByTrader, parsePartIndex } from './lib.js';
+import { hi, topoSortByTrader, parsePartIndex, normalizeProgressPayload } from './lib.js';
 import { el } from './dom.js';
 import { state, refs, saveProgress, saveUI, CELEBRATED_KEY } from './state.js';
 import { safeLocalStorageRemove, safeLocalStorageSet } from './storage.js';
-import { positionSidebar } from './sidebar.js';
 import { fireConfetti } from './confetti.js';
 
 const ORDER_ROWS = [
@@ -120,7 +119,17 @@ function captureScroll() {
   });
 }
 
-function showToast(msg, actions = []) {
+let toastDismissTimer = null;
+
+function hideToast() {
+  refs.toast.classList.remove('show');
+  if (toastDismissTimer) {
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = null;
+  }
+}
+
+function showToast(msg, actions = [], { persistent = false, duration = 5000 } = {}) {
   const msgEl = document.getElementById('eft-toast-msg');
   const actEl = refs.toast.querySelector('.toast-actions');
   msgEl.textContent = msg;
@@ -133,7 +142,10 @@ function showToast(msg, actions = []) {
     actEl.appendChild(b);
   });
   refs.toast.classList.add('show');
-  setTimeout(() => refs.toast.classList.remove('show'), 5000);
+  if (toastDismissTimer) clearTimeout(toastDismissTimer);
+  toastDismissTimer = persistent
+    ? null
+    : setTimeout(() => refs.toast.classList.remove('show'), duration);
 }
 
 function exportProgress() {
@@ -145,6 +157,31 @@ function exportProgress() {
   a.download = `eftracker-progress-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+function importProgress() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.onchange = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const normalized = normalizeProgressPayload(parsed);
+      const added = Object.keys(normalized).filter(k => !state.done[k]).length;
+      state.done = { ...state.done, ...normalized };
+      state.celebrated = false;
+      safeLocalStorageRemove(CELEBRATED_KEY);
+      saveProgress();
+      render();
+      showToast(`Imported ${Object.keys(normalized).length} entries (${added} new).`);
+    } catch (err) {
+      showToast(`Import failed: ${err.message}`);
+    }
+  };
+  input.click();
 }
 
 function maybeCelebrate() {
@@ -192,12 +229,25 @@ function updateSectionCountDOM(traderName) {
   countEl.textContent = `${done}/${list.length}`;
 }
 
+function updateTraderChipDOM(traderName) {
+  const chip = document.querySelector(
+    `.trader-chip[data-trader="${CSS.escape(traderName)}"]`
+  );
+  if (!chip) return;
+  const list = orderedGroups().get(traderName);
+  if (!list) return;
+  const done = list.reduce((n, t) => n + (state.done[t.id] ? 1 : 0), 0);
+  const num = chip.querySelector('.trader-chip-num');
+  if (num) num.textContent = `${done}/${list.length}`;
+}
+
 function toggleTaskDone(task, traderName, rowEl, checked) {
   state.done[task.id] = checked;
   saveProgress();
   rowEl.classList.toggle('done', checked);
   updateStatsDOM();
   updateSectionCountDOM(traderName);
+  updateTraderChipDOM(traderName);
   if (!state.showCompleted && checked) {
     renderColumnsOnly();
   }
@@ -283,6 +333,28 @@ export function render() {
   const ordAll = buildColumnOrder(allNames);
   const dropdown = ['ALL', ...ordAll.left, ...ordAll.right];
 
+  const traderChips = el('div', {
+    class: 'trader-stats',
+    'aria-label': 'Progress by trader'
+  });
+  if (!state.loading) {
+    const ordered = orderedGroups();
+    for (const name of [...ordAll.left, ...ordAll.right]) {
+      const list = ordered.get(name);
+      if (!list || !list.length) continue;
+      const done = list.reduce((n, t) => n + (state.done[t.id] ? 1 : 0), 0);
+      traderChips.append(
+        el(
+          'span',
+          { class: 'trader-chip', 'data-trader': name },
+          el('span', { class: 'trader-chip-name' }, name),
+          ' ',
+          el('span', { class: 'trader-chip-num' }, `${done}/${list.length}`)
+        )
+      );
+    }
+  }
+
   const traderSelectId = 'eft-trader-filter';
   const sel = el('select', {
     id: traderSelectId,
@@ -366,16 +438,39 @@ export function render() {
       class: 'btn',
       type: 'button',
       onclick: () => {
-        if (confirm('Reset all progress?')) {
-          state.done = {};
-          state.celebrated = false;
-          safeLocalStorageRemove(CELEBRATED_KEY);
-          saveProgress();
-          render();
-        }
+        showToast(
+          'Reset all progress?',
+          [
+            {
+              label: 'Confirm',
+              onClick: () => {
+                hideToast();
+                state.done = {};
+                state.celebrated = false;
+                safeLocalStorageRemove(CELEBRATED_KEY);
+                saveProgress();
+                render();
+              }
+            },
+            { label: 'Cancel', onClick: hideToast }
+          ],
+          { persistent: true }
+        );
       }
     },
     'Reset progress'
+  );
+
+  const importBtn = el(
+    'button',
+    { class: 'btn', type: 'button', onclick: importProgress },
+    'Import'
+  );
+
+  const exportBtn = el(
+    'button',
+    { class: 'btn', type: 'button', onclick: exportProgress },
+    'Export'
   );
 
   const collapseAll = el(
@@ -402,6 +497,8 @@ export function render() {
     kappaOnly,
     showCompleted,
     searchBox,
+    importBtn,
+    exportBtn,
     reset,
     collapseAll
   );
@@ -413,7 +510,14 @@ export function render() {
     el('div', { class: 'col', id: 'eft-col-R' })
   );
 
-  refs.app.append(hero, err || document.createComment('noerr'), statsRow, bar, cols);
+  refs.app.append(
+    hero,
+    err || document.createComment('noerr'),
+    statsRow,
+    traderChips,
+    bar,
+    cols
+  );
 
   if (state.loading) {
     const L = document.getElementById('eft-col-L');
@@ -426,7 +530,6 @@ export function render() {
     renderColumnsOnly();
   }
 
-  requestAnimationFrame(positionSidebar);
   if (restoreSearch) {
     const sEl = document.getElementById('eft-search');
     if (sEl) {
@@ -482,9 +585,9 @@ export function renderColumnsOnly(scrollToFirst = false) {
       el('div', { class: 'sec-count' }, `${doneCount}/${list.length}`)
     );
 
-    const wrap = el('div', { class: 'task-wrap' });
+    const wrap = el('ul', { class: 'task-wrap', role: 'list' });
     for (const t of list) {
-      const row = el('div', { class: 'task' + (state.done[t.id] ? ' done' : '') });
+      const row = el('li', { class: 'task' + (state.done[t.id] ? ' done' : '') });
       const top = el('div', { class: 'task-row' });
       const cb = el('input', { type: 'checkbox', checked: !!state.done[t.id] });
       cb.addEventListener('change', e => toggleTaskDone(t, name, row, e.target.checked));
@@ -597,6 +700,5 @@ export function renderColumnsOnly(scrollToFirst = false) {
     firstMatchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  positionSidebar();
   maybeCelebrate();
 }

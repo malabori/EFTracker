@@ -2,7 +2,6 @@ import { state } from './state.js';
 import { initBackground } from './background.js';
 import { ensureShell } from './shell.js';
 import { setupNav } from './nav.js';
-import { setupViewportListeners } from './sidebar.js';
 import { render } from './render.js';
 import { fetchTasks, getCache, setCache } from './api.js';
 
@@ -38,7 +37,6 @@ function init() {
   initBackground();
   ensureShell();
   setupNav();
-  setupViewportListeners();
   window.addEventListener('eft:reload', () => load(true));
   load();
 }
