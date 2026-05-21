@@ -3,6 +3,7 @@ import { el } from './dom.js';
 import { state, refs, saveProgress, saveUI, CELEBRATED_KEY } from './state.js';
 import { safeLocalStorageRemove, safeLocalStorageSet } from './storage.js';
 import { fireConfetti } from './confetti.js';
+import { mapsForTask, repRewardsForTask } from './recommendations.js';
 
 const ORDER_ROWS = [
   ['Prapor', 'Therapist'],
@@ -110,6 +111,34 @@ function buildColumnOrder(present) {
     }
   }
   return { left: L, right: R };
+}
+
+// Builds the level / xp / map / rep badge strip shown under each task
+// name. Returns null when there is nothing worth showing so callers
+// can skip appending an empty container.
+function buildTaskMeta(t) {
+  const badges = [];
+  const lvl = t.minPlayerLevel;
+  if (typeof lvl === 'number' && lvl > 0) {
+    badges.push(el('span', { class: 't-badge t-lvl' }, `LVL ${lvl}`));
+  }
+  if (typeof t.experience === 'number' && t.experience > 0) {
+    const xp =
+      t.experience >= 1000 ? `${Math.round(t.experience / 100) / 10}k` : t.experience;
+    badges.push(el('span', { class: 't-badge t-xp' }, `${xp} XP`));
+  }
+  const maps = mapsForTask(t, 3);
+  for (const m of maps) {
+    badges.push(el('span', { class: 't-badge t-map' }, m));
+  }
+  const reps = repRewardsForTask(t);
+  for (const r of reps) {
+    const sign = r.standing > 0 ? '+' : '';
+    const cls = r.standing < 0 ? 't-badge t-rep neg' : 't-badge t-rep';
+    badges.push(el('span', { class: cls }, `${sign}${r.standing} ${r.trader}`));
+  }
+  if (!badges.length) return null;
+  return el('div', { class: 't-meta' }, ...badges);
 }
 
 function captureScroll() {
@@ -245,6 +274,10 @@ function toggleTaskDone(task, traderName, rowEl, checked) {
   state.done[task.id] = checked;
   saveProgress();
   rowEl.classList.toggle('done', checked);
+  if (checked && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    rowEl.classList.add('just-stamped');
+    setTimeout(() => rowEl.classList.remove('just-stamped'), 600);
+  }
   updateStatsDOM();
   updateSectionCountDOM(traderName);
   updateTraderChipDOM(traderName);
@@ -271,11 +304,21 @@ export function render() {
   const s = stats();
   refs.app.innerHTML = '';
 
+  const today = new Date().toISOString().slice(0, 10);
+  const briefingNo = `BRIEFING #${today.replace(/-/g, '')}`;
+  const heroMeta = el(
+    'div',
+    { class: 'meta' },
+    el('span', {}, briefingNo),
+    el('span', {}, state.extended ? 'FULL INTEL' : 'PARTIAL INTEL'),
+    el('span', {}, state.loading ? 'DECRYPTING' : 'STATUS GREEN')
+  );
   const hero = el(
     'div',
     { class: 'hero' },
     el('h1', {}, 'EFTRACKER'),
-    el('div', { class: 'sub' }, 'TASK TRACKER SYSTEM v1.0')
+    el('div', { class: 'sub' }, 'TASK TRACKER SYSTEM // INTEL BRIEFING'),
+    heroMeta
   );
 
   const err = state.error
@@ -596,11 +639,13 @@ export function renderColumnsOnly(scrollToFirst = false) {
       const nameHtml = hi(t.name, q);
       const objHtml = hi(firstObj, q);
 
+      const meta = buildTaskMeta(t);
       const text = el(
         'div',
         { style: 'flex:1;min-width:0;' },
         el('div', { class: 't-name', html: nameHtml, title: t.name }),
-        firstObj ? el('div', { class: 't-obj', html: objHtml }) : null
+        firstObj ? el('div', { class: 't-obj', html: objHtml }) : null,
+        meta
       );
 
       const badges = document.createDocumentFragment();

@@ -3,14 +3,19 @@ import { readJsonLocalStorage, safeLocalStorageSet } from './storage.js';
 export const ENDPOINT = 'https://api.tarkov.dev/graphql';
 
 export const EXT_QUERY = `query Tasks { tasks {
-    id name type kappaRequired wikiLink trader { id name }
-    minPlayerLevel taskRequirements { task { id name trader { name } } status }
-    objectives { id description }
+    id name type kappaRequired wikiLink
+    trader { id name imageLink }
+    minPlayerLevel experience
+    taskRequirements { task { id name trader { name } } status }
+    objectives { id description maps { name } }
+    finishRewards {
+      traderStanding { trader { name } standing }
+    }
 } }`;
 
 export const BASIC_QUERY = `query Tasks { tasks { id name type kappaRequired wikiLink trader { id name } objectives { id description } } }`;
 
-const CACHE_KEY = 'eft_tasks_cache_v2';
+const CACHE_KEY = 'eft_tasks_cache_v3';
 const CACHE_TTL = 12 * 60 * 60 * 1000;
 
 export const getCache = () => {

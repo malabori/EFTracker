@@ -20,7 +20,9 @@ export const state = {
   scrollByTrader: {},
   celebrated: readJsonLocalStorage(CELEBRATED_KEY, false),
   loading: true,
-  error: ''
+  error: '',
+  view: hydratedUI.view === 'list' ? 'list' : 'briefing',
+  paletteOpen: false
 };
 
 export const refs = {
@@ -38,5 +40,9 @@ export const saveProgress = () =>
 export const saveUI = () =>
   safeLocalStorageSet(
     UI_KEY,
-    JSON.stringify({ collapsed: state.collapsed, openTask: state.openTask })
+    JSON.stringify({
+      collapsed: state.collapsed,
+      openTask: state.openTask,
+      view: state.view
+    })
   );
