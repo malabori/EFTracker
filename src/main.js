@@ -4,6 +4,7 @@ import { ensureShell } from './shell.js';
 import { setupNav } from './nav.js';
 import { render } from './render.js';
 import { fetchTasks, getCache, setCache } from './api.js';
+import { setupKeyboard } from './keyboard.js';
 
 async function load(isRetry = false) {
   if (!isRetry) render();
@@ -37,6 +38,7 @@ function init() {
   initBackground();
   ensureShell();
   setupNav();
+  setupKeyboard();
   window.addEventListener('eft:reload', () => load(true));
   load();
 }

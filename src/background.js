@@ -12,4 +12,11 @@ export function initBackground() {
     n.id = 'eft-bg-noise';
     document.body.appendChild(n);
   }
+
+  if (!document.getElementById('eft-bg-watermark')) {
+    const w = document.createElement('div');
+    w.id = 'eft-bg-watermark';
+    w.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(w);
+  }
 }

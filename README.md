@@ -2,12 +2,25 @@
 
 A single-page web app that tracks **Escape From Tarkov** quest progress.
 Pulls the live quest list from the public [Tarkov.dev](https://tarkov.dev)
-GraphQL API, groups quests by trader in a two-column layout, and lets you
-tick off completion. Highlights Kappa-required quests, supports search +
+GraphQL API, opens on a **Briefing** view that recommends what to do
+next, and falls back to a per-trader **List** view when you want to dig
+through everything. Highlights Kappa-required quests, supports search +
 filter, orders quests by prerequisite chain within each trader, and
 persists progress to `localStorage`.
 
-No framework. No backend. No tracking.
+The look is a classified-intel dossier: rubber-stamp completion overlays,
+classification ribbons, scanline texture. No framework. No backend. No
+tracking.
+
+## Keyboard
+
+| key                  | does                                                |
+| -------------------- | --------------------------------------------------- |
+| `Cmd/Ctrl+K`         | Open the command palette (quests, traders, actions) |
+| `/`                  | Focus the inline search                             |
+| `?`                  | Show the keyboard shortcut toast                    |
+| `Esc`                | Close the palette / off-canvas / styled confirm     |
+| `↑` / `↓` in palette | Move selection · `↵` runs it                        |
 
 ## Quick start
 
@@ -38,24 +51,28 @@ on every push and PR to `main`.
 
 ```
 src/
-  main.js          entry — wires init() + load()
-  state.js         shared singleton state + DOM refs
-  storage.js       safe localStorage wrappers
-  api.js           Tarkov.dev fetch + 12 h cache
-  lib.js           pure helpers (escape, hi, parsePartIndex,
-                   topoSortByTrader, normalizeProgressPayload)
-  dom.js           el() — small element builder
-  shell.js         outer HTML shell template + ref binding
-  background.js    background grid + noise <div>s
-  confetti.js      kappa-celebration canvas animation
-  nav.js           mobile burger menu
-  render.js        all task-list rendering, stats, toast, partial updates,
-                   import/export, styled confirm
-  lib.test.js      Vitest suite for the pure helpers
+  main.js                  entry — wires init() + load()
+  state.js                 shared singleton state + DOM refs
+  storage.js               safe localStorage wrappers
+  api.js                   Tarkov.dev fetch + 12 h cache
+  lib.js                   pure helpers (escape, hi, parsePartIndex,
+                           topoSortByTrader, normalizeProgressPayload)
+  recommendations.js       getNextUp / mapsForTask / repRewardsForTask
+  dom.js                   el() — small element builder
+  shell.js                 outer HTML shell template + ref binding +
+                           mobile bottom-tab nav
+  background.js            background grid + noise + watermark
+  confetti.js              kappa-celebration canvas animation
+  nav.js                   burger menu + mobile bottom-tab handlers
+  palette.js               command palette (Cmd/Ctrl+K)
+  keyboard.js              global keyboard shortcuts
+  render.js                briefing + list views, stats, toast,
+                           partial updates, import/export, styled confirm
+  *.test.js                Vitest suites
   styles/
-    main.css       layered CSS (base, layout, components, utilities) —
-                   sidebar is CSS-grid + position: sticky
-    tokens.css     design tokens + @property registrations
+    main.css               layered CSS (base, layout, components, utilities) —
+                           sidebar is CSS-grid + position: sticky
+    tokens.css             design tokens + @property registrations
 
 embed/
   eftracker-embed.js   <eftracker-embed src="…" allowed-hosts="a,b">
@@ -89,9 +106,9 @@ Roman / Arabic "Part N" suffixes are parsed by `parsePartIndex` so
 | key                        | what                                            |
 | -------------------------- | ----------------------------------------------- |
 | `eft-task-progress-stable` | `{ [taskId]: true }` map of completions         |
-| `eft-ui`                   | `{ collapsed, openTask }` UI prefs              |
+| `eft-ui`                   | `{ collapsed, openTask, view }` UI prefs        |
 | `eft-kappa-celebrated`     | `true` once the kappa confetti fired            |
-| `eft_tasks_cache_v2`       | `{ ts, data }` — last GraphQL payload, 12 h TTL |
+| `eft_tasks_cache_v3`       | `{ ts, data }` — last GraphQL payload, 12 h TTL |
 
 All access is wrapped in `safe*` helpers in `src/storage.js` so a
 disabled / full `localStorage` doesn't crash the app.

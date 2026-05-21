@@ -3,6 +3,8 @@ import { el } from './dom.js';
 import { state, refs, saveProgress, saveUI, CELEBRATED_KEY } from './state.js';
 import { safeLocalStorageRemove, safeLocalStorageSet } from './storage.js';
 import { fireConfetti } from './confetti.js';
+import { getNextUp, mapsForTask, repRewardsForTask } from './recommendations.js';
+import { openPalette } from './palette.js';
 
 const ORDER_ROWS = [
   ['Prapor', 'Therapist'],
@@ -112,6 +114,34 @@ function buildColumnOrder(present) {
   return { left: L, right: R };
 }
 
+// Builds the level / xp / map / rep badge strip shown under each task
+// name. Returns null when there is nothing worth showing so callers
+// can skip appending an empty container.
+function buildTaskMeta(t) {
+  const badges = [];
+  const lvl = t.minPlayerLevel;
+  if (typeof lvl === 'number' && lvl > 0) {
+    badges.push(el('span', { class: 't-badge t-lvl' }, `LVL ${lvl}`));
+  }
+  if (typeof t.experience === 'number' && t.experience > 0) {
+    const xp =
+      t.experience >= 1000 ? `${Math.round(t.experience / 100) / 10}k` : t.experience;
+    badges.push(el('span', { class: 't-badge t-xp' }, `${xp} XP`));
+  }
+  const maps = mapsForTask(t, 3);
+  for (const m of maps) {
+    badges.push(el('span', { class: 't-badge t-map' }, m));
+  }
+  const reps = repRewardsForTask(t);
+  for (const r of reps) {
+    const sign = r.standing > 0 ? '+' : '';
+    const cls = r.standing < 0 ? 't-badge t-rep neg' : 't-badge t-rep';
+    badges.push(el('span', { class: cls }, `${sign}${r.standing} ${r.trader}`));
+  }
+  if (!badges.length) return null;
+  return el('div', { class: 't-meta' }, ...badges);
+}
+
 function captureScroll() {
   refs.app?.querySelectorAll('.section .task-wrap').forEach(w => {
     const trader = w.closest('.section')?.getAttribute('data-trader');
@@ -196,6 +226,118 @@ function maybeCelebrate() {
   }
 }
 
+// Builds the command list the palette searches against. Recomputed
+// every time the palette opens so freshly-loaded tasks show up.
+export function getPaletteCommands() {
+  const cmds = [
+    {
+      kind: 'action',
+      label: 'Open briefing',
+      hint: 'View',
+      run: () => setView('briefing')
+    },
+    {
+      kind: 'action',
+      label: 'Open list view',
+      hint: 'View',
+      run: () => setView('list')
+    },
+    {
+      kind: 'action',
+      label: 'Toggle Kappa only',
+      hint: 'Filter',
+      run: () => {
+        state.kappaOnly = !state.kappaOnly;
+      }
+    },
+    {
+      kind: 'action',
+      label: 'Toggle show completed',
+      hint: 'Filter',
+      run: () => {
+        state.showCompleted = !state.showCompleted;
+      }
+    },
+    {
+      kind: 'action',
+      label: 'Import progress',
+      hint: 'Data',
+      run: importProgress
+    },
+    {
+      kind: 'action',
+      label: 'Export progress',
+      hint: 'Data',
+      run: exportProgress
+    },
+    {
+      kind: 'action',
+      label: 'Reset all progress',
+      hint: 'Danger',
+      run: () => {
+        showToast(
+          'Reset all progress?',
+          [
+            {
+              label: 'Confirm',
+              onClick: () => {
+                hideToast();
+                state.done = {};
+                state.celebrated = false;
+                safeLocalStorageRemove(CELEBRATED_KEY);
+                saveProgress();
+                render();
+              }
+            },
+            { label: 'Cancel', onClick: hideToast }
+          ],
+          { persistent: true }
+        );
+      }
+    }
+  ];
+
+  // One command per trader → opens that trader's dossier.
+  const traders = [
+    ...new Set(state.tasks.map(t => t.trader?.name).filter(Boolean))
+  ].sort();
+  for (const name of traders) {
+    cmds.push({
+      kind: 'trader',
+      label: name,
+      hint: 'Open dossier',
+      run: () => openTraderDossier(name)
+    });
+  }
+
+  // Quests — only incomplete ones, to keep results punchy. Completed
+  // tasks fall out of the day-to-day search surface; finding a done
+  // task is still possible via the in-list search.
+  for (const t of state.tasks) {
+    if (state.done[t.id]) continue;
+    cmds.push({
+      kind: 'quest',
+      label: t.name,
+      hint: t.trader?.name || 'Quest',
+      run: () => focusTask(t)
+    });
+  }
+
+  return cmds;
+}
+
+function showShortcutsToast() {
+  showToast(
+    'Cmd/Ctrl+K palette · / search · ? help · Esc close',
+    [{ label: 'Dismiss', onClick: hideToast }],
+    { persistent: true }
+  );
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('eft:show-shortcuts', showShortcutsToast);
+}
+
 function updateStatsDOM() {
   const statsEl = document.getElementById('eft-stats');
   if (!statsEl) return;
@@ -245,6 +387,10 @@ function toggleTaskDone(task, traderName, rowEl, checked) {
   state.done[task.id] = checked;
   saveProgress();
   rowEl.classList.toggle('done', checked);
+  if (checked && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    rowEl.classList.add('just-stamped');
+    setTimeout(() => rowEl.classList.remove('just-stamped'), 600);
+  }
   updateStatsDOM();
   updateSectionCountDOM(traderName);
   updateTraderChipDOM(traderName);
@@ -255,6 +401,257 @@ function toggleTaskDone(task, traderName, rowEl, checked) {
 }
 
 let searchTimer = null;
+
+function setView(v) {
+  if (state.view === v) return;
+  state.view = v;
+  saveUI();
+  renderContent();
+  // Re-render the bar to update the active state of the view toggle.
+  // The full render path also takes care of focus/scroll restoration.
+  const toggleButtons = refs.app?.querySelectorAll('.view-toggle button') || [];
+  toggleButtons.forEach((btn, i) => {
+    btn.classList.toggle('is-active', i === (v === 'briefing' ? 0 : 1));
+  });
+}
+
+function renderContent() {
+  const contentArea = document.getElementById('eft-content');
+  if (!contentArea) return;
+  contentArea.innerHTML = '';
+
+  if (state.loading) {
+    const grid = el('div', { class: 'trader-grid' });
+    for (let i = 0; i < 8; i++) {
+      grid.append(el('div', { class: 'skeleton', style: 'height:148px' }));
+    }
+    contentArea.append(grid);
+    return;
+  }
+
+  if (state.view === 'briefing') {
+    contentArea.append(buildBriefing());
+  } else {
+    const cols = el(
+      'div',
+      { class: 'columns' },
+      el('div', { class: 'col', id: 'eft-col-L' }),
+      el('div', { class: 'col', id: 'eft-col-R' })
+    );
+    contentArea.append(cols);
+    renderColumnsOnly();
+  }
+}
+
+// "Briefing" home view: a "Next Up" strip of 5 actionable quests on top,
+// then a grid of trader cards. Clicking a trader card switches to the
+// list view filtered to that trader.
+function buildBriefing() {
+  const root = el('div', { class: 'briefing' });
+
+  // === Next Up ===
+  const nextUpHead = el(
+    'div',
+    { class: 'panel-head' },
+    el('span', { class: 'panel-title' }, 'Next up'),
+    el('span', { class: 'panel-hint' }, 'Eligible · Kappa-first')
+  );
+  root.append(nextUpHead);
+
+  const recs = getNextUp(state.tasks, state.done, 5);
+  if (!recs.length) {
+    root.append(
+      el(
+        'div',
+        { class: 'next-up-empty' },
+        'All clear, operator. No outstanding objectives match your status.'
+      )
+    );
+  } else {
+    const strip = el('div', { class: 'next-up' });
+    for (const t of recs) {
+      const card = el(
+        'div',
+        {
+          class: 'next-up-card' + (t.kappaRequired ? ' is-kappa' : ''),
+          role: 'button',
+          tabindex: 0,
+          'data-task-id': t.id,
+          onclick: () => focusTask(t),
+          onkeydown: e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              focusTask(t);
+            }
+          }
+        },
+        el(
+          'div',
+          { class: 'nu-trader' },
+          (t.trader?.name || 'Unknown') + (t.kappaRequired ? ' · KAPPA' : '')
+        ),
+        el('div', { class: 'nu-name', title: t.name }, t.name),
+        t.objectives?.[0]?.description
+          ? el('div', { class: 'nu-obj' }, t.objectives[0].description)
+          : null
+      );
+      const metaRow = el('div', { class: 'nu-meta' });
+      if (typeof t.minPlayerLevel === 'number' && t.minPlayerLevel > 0) {
+        metaRow.append(el('span', { class: 't-badge t-lvl' }, `LVL ${t.minPlayerLevel}`));
+      }
+      for (const m of mapsForTask(t, 2)) {
+        metaRow.append(el('span', { class: 't-badge t-map' }, m));
+      }
+      card.append(metaRow);
+      strip.append(card);
+    }
+    root.append(strip);
+  }
+
+  // === Trader cards ===
+  const allNames = [...new Set(state.tasks.map(t => t.trader?.name || 'Unknown'))];
+  const ordAll = buildColumnOrder(allNames);
+  const traderOrder = [...ordAll.left, ...ordAll.right];
+
+  root.append(
+    el(
+      'div',
+      { class: 'panel-head' },
+      el('span', { class: 'panel-title' }, 'Operatives'),
+      el('span', { class: 'panel-hint' }, 'Open a dossier to view full task list')
+    )
+  );
+
+  const grid = el('div', { class: 'trader-grid' });
+  const ordered = orderedGroups();
+  for (const name of traderOrder) {
+    const list = ordered.get(name);
+    if (!list || !list.length) continue;
+    grid.append(buildTraderCard(name, list));
+  }
+  root.append(grid);
+
+  return root;
+}
+
+function buildTraderCard(name, list) {
+  const done = list.reduce((n, t) => n + (state.done[t.id] ? 1 : 0), 0);
+  const total = list.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const isComplete = done === total && total > 0;
+
+  // Image from Tarkov.dev (per-trader). Falls back to the trader's
+  // initial in a colored chip if the API didn't supply one.
+  const img = list[0]?.trader?.imageLink;
+  const portrait = img
+    ? el('img', {
+        class: 'tc-portrait',
+        src: img,
+        alt: '',
+        loading: 'lazy',
+        onerror: e => {
+          e.target.replaceWith(
+            (() => {
+              const f = el('div', { class: 'tc-portrait-fallback' }, name.charAt(0));
+              return f;
+            })()
+          );
+        }
+      })
+    : el('div', { class: 'tc-portrait-fallback' }, name.charAt(0));
+
+  // The single next quest for this trader, if any.
+  const next = getNextUp(list, state.done, 1)[0];
+
+  const card = el(
+    'div',
+    {
+      class: 'trader-card' + (isComplete ? ' is-complete' : ''),
+      role: 'button',
+      tabindex: 0,
+      'data-trader': name,
+      onclick: () => openTraderDossier(name),
+      onkeydown: e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openTraderDossier(name);
+        }
+      }
+    },
+    el(
+      'div',
+      { class: 'tc-head' },
+      portrait,
+      el('div', { class: 'tc-name' }, name),
+      el('div', { class: 'tc-count' }, `${done}/${total}`)
+    ),
+    el(
+      'div',
+      { class: 'tc-bar', role: 'progressbar', 'aria-valuenow': pct },
+      el('div', { class: 'tc-bar-fill', style: `width:${pct}%` })
+    )
+  );
+
+  if (next) {
+    const metaRow = el('div', { class: 'tc-next-meta' });
+    if (typeof next.minPlayerLevel === 'number' && next.minPlayerLevel > 0) {
+      metaRow.append(
+        el('span', { class: 't-badge t-lvl' }, `LVL ${next.minPlayerLevel}`)
+      );
+    }
+    if (next.kappaRequired) {
+      metaRow.append(el('span', { class: 't-kappa' }, 'Kappa'));
+    }
+    card.append(
+      el('div', { class: 'tc-next-label' }, 'Next briefing'),
+      el('div', { class: 'tc-next-name', title: next.name }, next.name),
+      metaRow
+    );
+  } else if (isComplete) {
+    card.append(el('div', { class: 'tc-next-empty' }, 'Dossier closed.'));
+  } else {
+    card.append(el('div', { class: 'tc-next-empty' }, 'Nothing eligible right now.'));
+  }
+
+  return card;
+}
+
+// Clicking a trader card swaps to the list view filtered to that
+// trader so the user lands directly on the relevant quest section.
+function openTraderDossier(name) {
+  state.traderFilter = name;
+  state.view = 'list';
+  saveUI();
+  render();
+  // Scroll the matched section into view after the next paint.
+  requestAnimationFrame(() => {
+    const sec = refs.app?.querySelector(`.section[data-trader="${CSS.escape(name)}"]`);
+    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+// Clicking a Next Up card switches to the list view, filters to the
+// quest's trader, and tries to scroll the row itself into view.
+function focusTask(task) {
+  const traderName = task.trader?.name || 'Unknown';
+  state.traderFilter = traderName;
+  state.view = 'list';
+  saveUI();
+  render();
+  requestAnimationFrame(() => {
+    const row = refs.app?.querySelector(
+      `.task input[type='checkbox'][data-task-id="${CSS.escape(task.id)}"]`
+    );
+    const target = row?.closest('.task');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('just-stamped');
+      // Reuse the stamp animation for a quick "focus pulse"; harmless
+      // even if the task isn't done.
+      setTimeout(() => target.classList.remove('just-stamped'), 600);
+    }
+  });
+}
 
 export function render() {
   let restoreSearch = null;
@@ -271,11 +668,21 @@ export function render() {
   const s = stats();
   refs.app.innerHTML = '';
 
+  const today = new Date().toISOString().slice(0, 10);
+  const briefingNo = `BRIEFING #${today.replace(/-/g, '')}`;
+  const heroMeta = el(
+    'div',
+    { class: 'meta' },
+    el('span', {}, briefingNo),
+    el('span', {}, state.extended ? 'FULL INTEL' : 'PARTIAL INTEL'),
+    el('span', {}, state.loading ? 'DECRYPTING' : 'STATUS GREEN')
+  );
   const hero = el(
     'div',
     { class: 'hero' },
     el('h1', {}, 'EFTRACKER'),
-    el('div', { class: 'sub' }, 'TASK TRACKER SYSTEM v1.0')
+    el('div', { class: 'sub' }, 'TASK TRACKER SYSTEM // INTEL BRIEFING'),
+    heroMeta
   );
 
   const err = state.error
@@ -489,26 +896,70 @@ export function render() {
     'Collapse all'
   );
 
+  const viewToggle = el(
+    'div',
+    { class: 'view-toggle', role: 'group', 'aria-label': 'View mode' },
+    el(
+      'button',
+      {
+        type: 'button',
+        class: state.view === 'briefing' ? 'is-active' : '',
+        onclick: () => setView('briefing')
+      },
+      'Briefing'
+    ),
+    el(
+      'button',
+      {
+        type: 'button',
+        class: state.view === 'list' ? 'is-active' : '',
+        onclick: () => setView('list')
+      },
+      'List'
+    )
+  );
+
+  const paletteBtn = el(
+    'button',
+    {
+      class: 'btn palette-btn',
+      type: 'button',
+      title: 'Command palette (Cmd/Ctrl + K)',
+      onclick: () => openPalette()
+    },
+    el('span', {}, 'Search'),
+    el('kbd', { class: 'kbd-hint' }, '⌘K')
+  );
+
+  const helpBtn = el(
+    'button',
+    {
+      class: 'btn',
+      type: 'button',
+      title: 'Keyboard shortcuts (?)',
+      onclick: showShortcutsToast
+    },
+    '?'
+  );
+
   const bar = el(
     'div',
     { class: 'bar', id: 'eft-bar' },
+    viewToggle,
     traderLabel,
     sel,
     kappaOnly,
     showCompleted,
     searchBox,
+    paletteBtn,
     importBtn,
     exportBtn,
     reset,
-    collapseAll
+    collapseAll,
+    helpBtn
   );
 
-  const cols = el(
-    'div',
-    { class: 'columns' },
-    el('div', { class: 'col', id: 'eft-col-L' }),
-    el('div', { class: 'col', id: 'eft-col-R' })
-  );
+  const contentArea = el('div', { id: 'eft-content' });
 
   refs.app.append(
     hero,
@@ -516,19 +967,10 @@ export function render() {
     statsRow,
     traderChips,
     bar,
-    cols
+    contentArea
   );
 
-  if (state.loading) {
-    const L = document.getElementById('eft-col-L');
-    const R = document.getElementById('eft-col-R');
-    for (let i = 0; i < 4; i++) {
-      L.append(el('div', { class: 'skeleton' }));
-      R.append(el('div', { class: 'skeleton' }));
-    }
-  } else {
-    renderColumnsOnly();
-  }
+  renderContent();
 
   if (restoreSearch) {
     const sEl = document.getElementById('eft-search');
@@ -589,18 +1031,24 @@ export function renderColumnsOnly(scrollToFirst = false) {
     for (const t of list) {
       const row = el('li', { class: 'task' + (state.done[t.id] ? ' done' : '') });
       const top = el('div', { class: 'task-row' });
-      const cb = el('input', { type: 'checkbox', checked: !!state.done[t.id] });
+      const cb = el('input', {
+        type: 'checkbox',
+        checked: !!state.done[t.id],
+        'data-task-id': t.id
+      });
       cb.addEventListener('change', e => toggleTaskDone(t, name, row, e.target.checked));
 
       const firstObj = t.objectives?.[0]?.description || '';
       const nameHtml = hi(t.name, q);
       const objHtml = hi(firstObj, q);
 
+      const meta = buildTaskMeta(t);
       const text = el(
         'div',
         { style: 'flex:1;min-width:0;' },
         el('div', { class: 't-name', html: nameHtml, title: t.name }),
-        firstObj ? el('div', { class: 't-obj', html: objHtml }) : null
+        firstObj ? el('div', { class: 't-obj', html: objHtml }) : null,
+        meta
       );
 
       const badges = document.createDocumentFragment();
