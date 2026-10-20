@@ -46,9 +46,7 @@ export function normalizeTask(raw) {
     slug: raw.normalizedName || null,
     wikiLink: raw.wikiLink || null,
     level: Number.isFinite(raw.minPlayerLevel) ? raw.minPlayerLevel : 1,
-    xp: Number.isFinite(raw.experience) ? raw.experience : 0,
     kappa: Boolean(raw.kappaRequired),
-    lightkeeper: Boolean(raw.lightkeeperRequired),
     faction:
       raw.factionName === 'BEAR' || raw.factionName === 'USEC' ? raw.factionName : 'Any',
     trader,
@@ -57,23 +55,7 @@ export function normalizeTask(raw) {
     requires: (raw.taskRequirements || [])
       .filter(r => r?.task?.id != null)
       .map(r => ({ id: String(r.task.id), status: normalizeStatus(r.status) })),
-    traderReqs: (raw.traderRequirements || [])
-      .filter(r => r?.trader?.name && r.value != null)
-      .map(r => ({
-        trader: r.trader.name,
-        type: r.requirementType || 'level',
-        compare: r.compareMethod || '>=',
-        value: r.value
-      })),
     objectives,
-    rewards: {
-      standing: (raw.finishRewards?.traderStanding || [])
-        .filter(s => s?.trader?.name && s.standing)
-        .map(s => ({ trader: s.trader.name, standing: s.standing })),
-      items: (raw.finishRewards?.items || [])
-        .filter(i => i?.item?.name)
-        .map(i => ({ name: i.item.name, count: i.count || 1 }))
-    },
     search: [name, trader, ...maps, ...objectives.map(o => o.text)]
       .join('\n')
       .toLowerCase()
@@ -116,16 +98,6 @@ export function buildCatalog(rawTasks) {
     tasks.push(normalizeTask(raw));
   }
   const byId = new Map(tasks.map(t => [t.id, t]));
-
-  const unlocks = new Map();
-  for (const task of tasks) {
-    for (const req of task.requires) {
-      if (!byId.has(req.id)) continue;
-      if (!unlocks.has(req.id)) unlocks.set(req.id, []);
-      unlocks.get(req.id).push(task.id);
-    }
-  }
-
   const depth = chainDepths(tasks, byId);
   tasks.sort(
     (a, b) =>
@@ -141,14 +113,7 @@ export function buildCatalog(rawTasks) {
     if (t.traderImage && !traderImages.has(t.trader))
       traderImages.set(t.trader, t.traderImage);
 
-  return {
-    tasks,
-    byId,
-    unlocks,
-    traders: unique(tasks.map(t => t.trader)),
-    maps: unique(tasks.flatMap(t => t.maps)).sort((a, b) => a.localeCompare(b)),
-    traderImages
-  };
+  return { tasks, byId, traders: unique(tasks.map(t => t.trader)), traderImages };
 }
 
 export function inFactionScope(task, faction) {
@@ -213,9 +178,7 @@ export function normalizeQuery(query) {
 
 function matches(task, f, query) {
   if (f.trader && task.trader !== f.trader) return false;
-  if (f.map && !task.maps.includes(f.map)) return false;
   if (f.kappa && !task.kappa) return false;
-  if (f.lightkeeper && !task.lightkeeper) return false;
   if (query && !task.search.includes(query)) return false;
   return true;
 }
@@ -248,13 +211,7 @@ export function groupByTrader(list) {
 
 export function summarize(catalog, statuses, faction) {
   const blank = () => ({ done: 0, total: 0 });
-  const out = {
-    all: blank(),
-    kappa: blank(),
-    lightkeeper: blank(),
-    available: 0,
-    traders: new Map()
-  };
+  const out = { all: blank(), kappa: blank(), available: 0, traders: new Map() };
   for (const task of catalog.tasks) {
     if (!inFactionScope(task, faction)) continue;
     const state = statuses.get(task.id)?.state;
@@ -265,14 +222,9 @@ export function summarize(catalog, statuses, faction) {
     };
     add(out.all);
     if (task.kappa) add(out.kappa);
-    if (task.lightkeeper) add(out.lightkeeper);
     if (state === 'available') out.available++;
     if (!out.traders.has(task.trader)) out.traders.set(task.trader, blank());
     add(out.traders.get(task.trader));
   }
   return out;
-}
-
-export function requiredObjectives(task) {
-  return task.objectives.filter(o => !o.optional);
 }

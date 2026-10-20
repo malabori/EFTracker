@@ -1,22 +1,21 @@
 # EFTracking
 
-Escape from Tarkov quest tracker and flea price lookup — the site behind
-[eftracking.com](https://eftracking.com).
+Escape from Tarkov quest and Kappa tracker — the site behind
+[eftracking.com](https://eftracking.com). One page, kept to the bare bones:
 
-- **Quests** (`index.html`): every quest grouped by trader in unlock order,
-  split into _Available_, _Locked_ and _Completed_. Set your game mode, faction and
-  level and the board shows what you can actually take right now, why the rest is
-  locked, and your Kappa and Lightkeeper progress. Tick off quests or individual
-  objectives; filter by trader (the portrait strip), map, Kappa or Lightkeeper;
-  search names, objectives, items and maps.
-- **Flea market** (`flea.html`): lowest flea listing, 24-hour average and range,
-  best trader offer, where to sell, and value per inventory slot — for PvP or PvE.
+- Every quest, grouped by trader in unlock order and split into _Available_,
+  _Locked_ and _Done_. Set your game mode, faction and level and it shows what you
+  can take right now and why the rest is locked.
+- Tick quests off (with undo), filter by trader or Kappa, and search names,
+  objectives and maps. Open a quest to see its objectives, what it needs and its
+  wiki link.
+- Your Kappa progress on nixie tubes, and the two in-raid times in the header.
 
-Behind both pages runs an ASCII backdrop: drifting dust, and scenes from the
-game (Lighthouse, Killa, Kappa, the BTR, cultists, Tagilla, ULTRA, and the
-"Head, Eyes" death screen) that materialise, linger and dissolve. The footer
-switch sets it to Animated, Still or Off; visitors who ask their system for
-reduced motion get Still.
+The look is a Soviet-era field ledger: stencil type, Cyrillic plate labels,
+nixie-tube numbers, indicator lamps for quest status and a violet ink stamp for
+finished quests. ASCII dust drifts behind the page; the footer switch sets it to
+Animated, Still or Off, and visitors who ask their system for reduced motion get
+Still.
 
 All data comes live from [tarkov.dev](https://tarkov.dev)'s free community API.
 There is no account and no server: progress is saved in the visitor's browser
@@ -30,15 +29,15 @@ Pages). Don't add anything that needs compiling (npm imports in `src/`, TypeScri
 CSS preprocessors); the browser loads `src/` directly.
 
 ```
-index.html, flea.html   the two pages (static markup)
-src/shared/             used by both pages: API client, settings, storage,
-                        raid clock, formatting, header/footer behaviour,
-                        backdrop.js + ascii-art.js (the ASCII background)
-src/quests/             quest board: data.js (fetch/cache), model.js (pure
-                        quest logic), progress.js (saving + migration),
-                        view.js (HTML), main.js (wiring)
-src/flea/               flea page: data.js, model.js, main.js
-src/styles/             theme.css (shared look), quests.css, flea.css
+index.html              the page (static markup)
+flea.html               redirect: the old flea market page now lands on index.html
+src/shared/             API client, settings, storage, raid clock, formatting,
+                        header/footer behaviour, nixie.js (tube digits),
+                        backdrop.js (the ASCII dust)
+src/quests/             data.js (fetch/cache), model.js (pure quest logic),
+                        progress.js (saving + migration), view.js (HTML),
+                        main.js (wiring)
+src/styles/             theme.css (tokens and shared pieces), quests.css (layout)
 src/main.js,            loaded by the eftracking.com WordPress home page; they
 src/styles/main.css     frame the site (see Deploying)
 wp/eftracker-wp.css     loaded by the WordPress site to style its blog pages
@@ -86,12 +85,9 @@ npm run snapshot # refresh data/snapshot-*.json from tarkov.dev (needs internet)
 
 ## The ASCII backdrop
 
-Scenes live in `src/shared/ascii-art.js`: plain text art plus a caption, a glow
-colour and the boxes of characters that glow. To add one, append an entry there
-(the unit tests check that every glow box lands on the drawing). The motion is
-done by the browser's compositor (Web Animations), so script only runs while a
-scene fades in or out; keep it that way so the page stays light on laptops and
-phones.
+Two tiles of ASCII dust (`src/shared/backdrop.js`) drawn once and drifted by the
+browser's compositor (Web Animations), so no script runs while it moves. Keep it
+that way so the page stays light on laptops and phones.
 
 ## Data and correctness notes
 
@@ -111,13 +107,12 @@ phones.
 
 ## Saved data (localStorage)
 
-| key                          | contents                                               |
-| ---------------------------- | ------------------------------------------------------ |
-| `eftracking.progress.v1`     | completed quests and ticked objectives, per game mode  |
-| `eftracking.settings.v1`     | mode, faction, level, background (animated/still/off)  |
-| `eftracking.ui.v1`           | quest board filters, collapsed traders, selected quest |
-| `eftracking.flea.v1`         | last flea search and sort                              |
-| `eftracking.tasks.v1.<mode>` | cached quest data (refreshed after 6 hours)            |
+| key                          | contents                                                                            |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| `eftracking.progress.v1`     | completed quests per game mode (objective ticks saved by earlier versions are kept) |
+| `eftracking.settings.v1`     | mode, faction, level, background (animated/still/off)                               |
+| `eftracking.ui.v1`           | status tab, trader and Kappa filter                                                 |
+| `eftracking.tasks.v1.<mode>` | cached quest data (refreshed after 6 hours)                                         |
 
 On first load, progress saved by earlier versions of the site
 (`eft_tracker_state_v*` from the February 2026 Quest Board, `eft-task-progress-stable`

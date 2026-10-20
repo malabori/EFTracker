@@ -12,19 +12,12 @@ export const QUEST_QUERY = `query EftrackingQuests($mode: GameMode) {
     normalizedName
     wikiLink
     minPlayerLevel
-    experience
     kappaRequired
-    lightkeeperRequired
     factionName
     trader { name imageLink }
     map { name }
     taskRequirements { task { id } status }
-    traderRequirements { trader { name } requirementType compareMethod value }
     objectives { id description optional maps { name } }
-    finishRewards {
-      traderStanding { trader { name } standing }
-      items { count item { name } }
-    }
   }
 }`;
 

@@ -3,7 +3,7 @@ import { gql, gqlFirstAccepted } from '../src/shared/api.js';
 import { formatClock, isDaytime, raidTime } from '../src/shared/clock.js';
 import { esc, highlight } from '../src/shared/html.js';
 import { normalizeSettings } from '../src/shared/settings.js';
-import { rub, timeAgo } from '../src/shared/format.js';
+import { timeAgo } from '../src/shared/format.js';
 
 const HOUR = 60 * 60 * 1000;
 const respond = (status, body) => async () => ({
@@ -145,12 +145,6 @@ describe('settings', () => {
 });
 
 describe('format', () => {
-  it('formats roubles and hides missing prices', () => {
-    expect(rub(1234567, 'en-US')).toBe('1,234,567 ₽');
-    expect(rub(0)).toBe('—');
-    expect(rub(null)).toBe('—');
-  });
-
   it('describes how long ago something happened', () => {
     const now = Date.UTC(2026, 0, 1);
     expect(timeAgo(now - 10_000, now)).toBe('just now');

@@ -1,856 +1,1137 @@
-/* Quest page layout. Shared look comes from theme.css. */
+/* Quest ledger layout. Shared pieces (plates, panels, tubes, lamps, switches)
+   live in theme.css. */
 
-/* ---------- HUD: progress + profile ---------- */
-
-.hud {
-  display: grid;
-  gap: 12px;
-  padding-bottom: 18px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+.masthead,
+.console,
+.colophon {
+  position: relative;
+  z-index: 1;
+  width: min(1420px, 100%);
+  margin: 0 auto;
+  padding-left: 28px;
+  padding-right: 28px;
 }
 
-/* Semi-transparent so the ASCII backdrop shows through around the numbers. */
-.stat {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  min-height: 104px;
-  padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: var(--radius);
-  background: rgba(14, 16, 19, 0.6);
-}
-.stat-label {
-  color: var(--text-2);
-  font: 600 13px/1 var(--font-display);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.stat-value {
-  color: var(--text);
-  font: 600 36px/1 var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-.stat-total {
-  color: var(--text-3);
-  font-size: 19px;
-}
-.stat-sub {
-  color: var(--text-3);
-  font-size: 13px;
-}
-.stat.is-loading {
-  opacity: 0.4;
-}
-.stat-kappa .stat-label {
-  color: var(--kappa);
-}
-.stat-kappa .meter > span {
-  background: var(--kappa);
-}
-.stat-lk .stat-label {
-  color: var(--lk);
-}
-.stat-lk .meter > span {
-  background: var(--lk);
-}
-.stat-available .stat-value {
-  color: var(--ok);
-}
+/* ---------- masthead ---------- */
 
-.profile {
+.masthead {
+  padding-top: 22px;
+}
+.masthead-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: 16px 32px;
+  padding-bottom: 18px;
 }
-.field {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-.stepper {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-.stepper button {
-  width: 34px;
-  height: 38px;
-  border: 0;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 18px;
-  cursor: pointer;
-}
-.stepper button:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
-}
-.stepper input {
-  width: 52px;
-  min-height: 38px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  text-align: center;
-  font: 600 16px var(--font-display);
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-.stepper input:focus {
-  box-shadow: inset 0 0 0 2px var(--accent);
-}
-.stepper input::-webkit-outer-spin-button,
-.stepper input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* A heavy rule over a thin one, like the head of an official form. */
+.masthead::after {
+  content: '';
+  display: block;
+  height: 6px;
+  border-top: 2px solid var(--rule-3);
+  border-bottom: 1px solid var(--rule-2);
 }
 
-.profile .data-status {
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.emblem {
+  flex: none;
+}
+.wordmark-text {
+  display: grid;
+  gap: 7px;
+}
+.wordmark-name {
+  font: 800 44px/0.8 var(--font-stencil);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.wordmark-tag {
+  color: var(--ink-3);
+  font: 500 10.5px/1 var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.wordmark-tag [lang='ru'] {
+  color: var(--ink-2);
+}
+
+.raid {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-left: auto;
 }
-
-.profile-hint {
-  flex-basis: 100%;
-  color: var(--accent-strong);
-  font-size: 13px;
+.clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 7px;
+  border: 1px solid var(--rule-2);
+  background: var(--well);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.9);
 }
-.profile-hint::before {
-  content: '→ ';
-  color: var(--accent);
+/* Day: a warm lamp. Night: a crescent. */
+.phase {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.clock[data-phase='day'] .phase {
+  background: #ffc145;
+  box-shadow:
+    0 0 5px #ffc145,
+    0 0 12px rgba(255, 193, 69, 0.45);
+}
+.clock[data-phase='night'] .phase {
+  box-shadow: inset -3px -1px 0 0 #b9c7d6;
 }
 
-/* ---------- workspace ---------- */
+/* Panels settle into place on load, one after another. */
+.masthead,
+.panel,
+.colophon {
+  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.kappa {
+  animation-delay: 0.06s;
+}
+.operator {
+  animation-delay: 0.1s;
+}
+.traders-panel {
+  animation-delay: 0.14s;
+}
+.ledger {
+  animation-delay: 0.18s;
+}
+.colophon {
+  animation-delay: 0.24s;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
 
-.workspace {
+/* ---------- console grid ---------- */
+
+.console {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
-  gap: 16px;
+  grid-template-columns: 304px minmax(0, 1fr);
   align-items: start;
+  gap: 20px;
+  padding-top: 22px;
+  padding-bottom: 36px;
 }
-
-.board {
+.rail {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 20px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-2) transparent;
+}
+.desk {
+  display: grid;
+  gap: 20px;
   min-width: 0;
 }
 
-.board-head {
-  display: grid;
-  /* minmax(0, …) lets the trader strip scroll instead of widening the card. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  padding: 16px;
-  border-bottom: 1px solid var(--line);
-}
+/* ---------- 01 Kappa ---------- */
 
-.tabs {
-  display: flex;
-  width: 100%;
-}
-.tabs button {
-  flex: 1;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-}
-.tabs .count {
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-.tabs button[aria-pressed='true'] .count {
-  color: inherit;
-  opacity: 0.75;
-}
-
-/* Trader portraits, like the traders screen in-game. */
-.trader-strip {
+.kappa-readout {
   position: relative;
   display: flex;
-  gap: 4px;
-  margin: 0 -4px;
-  padding: 2px 4px 6px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-2) transparent;
+  align-items: flex-end;
+  gap: 12px;
+  min-height: 92px;
+  padding: 20px 18px 8px;
 }
-/* Fade the edge that has more traders past it, with an arrow on it for
-   mouse users (touch screens swipe). */
-.trader-rail {
-  position: relative;
-}
-.trader-rail.more-right .trader-strip {
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent);
-}
-.trader-rail.more-left .trader-strip {
-  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 64px), transparent);
-  mask-image: linear-gradient(to left, #000 calc(100% - 64px), transparent);
-}
-.trader-rail.more-left.more-right .trader-strip {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 64px,
-    #000 calc(100% - 64px),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 64px,
-    #000 calc(100% - 64px),
-    transparent
-  );
-}
-.rail-arrow {
+/* Warm light from the tubes spilling onto the panel. */
+.kappa-readout::before {
+  content: '';
   position: absolute;
-  top: 32px;
-  z-index: 1;
+  left: 4px;
+  right: 30%;
+  top: 6px;
+  bottom: -18px;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 110, 30, 0.13),
+    rgba(255, 110, 30, 0.04) 60%,
+    transparent
+  );
+}
+.kappa-readout:has(.kappa-none)::before,
+.kappa-readout:has(.tube.is-dark)::before {
   display: none;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0 0 2px;
-  border: 1px solid var(--line-2);
-  border-radius: 50%;
-  background: var(--surface-3);
-  color: var(--text);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  transform: translateY(-50%);
 }
-.rail-arrow:hover {
-  border-color: var(--accent);
-  color: var(--accent-strong);
+.kappa-readout.is-flicker .tube svg {
+  animation: restrike 0.42s linear;
 }
-.rail-arrow[data-scroll='-1'] {
-  left: -4px;
+.kappa-total {
+  padding-bottom: 6px;
+  color: var(--ink-3);
+  font: 800 30px/1 var(--font-stencil);
+  letter-spacing: 0.04em;
 }
-.rail-arrow[data-scroll='1'] {
-  right: -4px;
-}
-@media (hover: hover) {
-  .trader-rail.more-left .rail-arrow[data-scroll='-1'],
-  .trader-rail.more-right .rail-arrow[data-scroll='1'] {
-    display: grid;
-  }
-}
-.trader-btn {
-  flex: none;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  width: 76px;
-  padding: 8px 4px 9px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text-2);
-  cursor: pointer;
-}
-.trader-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-}
-.trader-btn[aria-pressed='true'] {
-  border-color: rgba(205, 183, 135, 0.5);
-  background: rgba(205, 183, 135, 0.1);
-  color: var(--text);
-}
-.trader-name {
-  max-width: 100%;
-  overflow: hidden;
-  font: 600 12px/1 var(--font-display);
-  letter-spacing: 0.02em;
-  text-overflow: ellipsis;
+.kappa-none {
+  color: var(--ink-3);
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  white-space: nowrap;
-}
-.trader-btn .meter {
-  width: 44px;
-  height: 3px;
-}
-.trader-btn[aria-pressed='true'] .meter > span {
-  background: var(--accent-strong);
 }
 
-.avatar {
+/* 40 segments, like an LED bar graph; --fill lights whole segments. */
+.segbar {
   position: relative;
-  flex: none;
+  height: 10px;
+  margin: 10px 18px 0;
+  background: linear-gradient(90deg, #24221d 0 68%, transparent 68%) 0 0 / calc(100% / 40)
+    100% repeat-x;
+}
+.segbar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--signal) 0 68%, transparent 68%) 0 0 /
+    calc(100% / 40) 100% repeat-x;
+  clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0);
+  filter: drop-shadow(0 0 4px rgba(255, 122, 43, 0.75));
+  transition: clip-path 0.6s ease;
+}
+
+.kappa-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0 0;
+  border-top: 1px solid var(--rule);
+}
+.kappa-stats > div {
+  padding: 12px 18px 14px;
+}
+.kappa-stats > div + div {
+  border-left: 1px solid var(--rule);
+}
+.kappa-stats dt {
+  color: var(--ink-3);
+  font: 700 9.5px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.kappa-stats dd {
+  margin: 7px 0 0;
+  color: var(--ink);
+  font: 700 17px/1 var(--font-mono);
+}
+.kappa-stats small {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ---------- 02 traders ---------- */
+
+.traders {
+  display: grid;
+}
+.trader {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 11px 16px 11px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+}
+.trader:last-child {
+  border-bottom: 0;
+}
+.trader:hover {
+  background: rgba(233, 227, 211, 0.03);
+  color: var(--ink);
+}
+.trader[aria-pressed='true'] {
+  background: rgba(255, 122, 43, 0.07);
+  color: var(--ink);
+}
+.trader[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--signal);
+  box-shadow: 0 0 10px rgba(255, 122, 43, 0.7);
+}
+.trader-photo,
+.group-photo {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid var(--line-2);
-  border-radius: 11px;
-  background: var(--surface-3);
-  color: var(--accent);
-  font: 700 19px/1 var(--font-display);
   overflow: hidden;
+  border: 1px solid var(--rule-2);
+  background: var(--raise);
+  color: var(--ink-3);
+  font: 800 19px/1 var(--font-stencil);
 }
-.avatar img {
+.trader-photo {
+  grid-row: 1 / 3;
+  width: 40px;
+  height: 40px;
+}
+.trader-photo img,
+.group-photo img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: grayscale(1) contrast(1.15) brightness(0.8);
+  transition: filter 0.2s;
 }
-.avatar-all {
-  color: var(--text-2);
+.trader:hover .trader-photo img,
+.trader[aria-pressed='true'] .trader-photo img {
+  filter: none;
 }
-.avatar-all svg {
-  fill: currentColor;
+.trader-photo.is-all {
+  color: var(--ink-3);
+}
+.trader[aria-pressed='true'] .trader-photo.is-all {
+  color: var(--signal);
+}
+.trader-text {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.trader-name {
+  overflow: hidden;
+  font: 800 18px/0.9 var(--font-stencil);
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.trader-ru {
+  color: var(--ink-3);
+  font: 500 9.5px/1 var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.trader-count {
+  align-self: start;
+  color: var(--ink-3);
+  font: 600 11.5px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.trader-bar {
+  grid-column: 2 / 4;
+  height: 2px;
+  background: #25231e;
+}
+.trader-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ink-3);
+  transition: width 0.4s ease;
+}
+.trader[aria-pressed='true'] .trader-bar > span {
+  background: var(--signal);
 }
 
-.filter-row {
+/* ---------- operator settings ---------- */
+
+.operator {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
+  align-items: flex-end;
+  gap: 14px 28px;
+  padding: 16px 18px;
 }
-.filter-row select {
-  min-width: 11rem;
+.op-field {
+  display: grid;
+  gap: 9px;
+}
+.op-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  margin-left: auto;
+  color: var(--ink-2);
+  font: 500 12px/1.35 var(--font-mono);
+}
+.op-link[data-tone='warn'],
+.op-link[data-tone='error'] {
+  color: var(--ink);
+}
+.op-hint {
+  flex-basis: 100%;
+  color: var(--signal-2);
+  font: 500 12px/1.4 var(--font-mono);
+}
+.op-hint::before {
+  content: '▸ ';
 }
 
-/* ---------- quest list ---------- */
+/* ---------- 03 ledger ---------- */
+
+.ledger-tools {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px 0;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--rule-2);
+  background: var(--well);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+.search:focus-within {
+  border-color: var(--signal);
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.9),
+    0 0 0 3px rgba(255, 122, 43, 0.14);
+}
+.search-prompt {
+  flex: none;
+  padding-left: 16px;
+  color: var(--signal);
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 48px 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 500 16px var(--font-ui);
+  caret-color: var(--signal);
+}
+.search input:focus {
+  outline: none;
+}
+.search input::placeholder {
+  color: var(--ink-3);
+}
+.search kbd {
+  position: absolute;
+  right: 14px;
+  min-width: 22px;
+  padding: 3px 6px;
+  border: 1px solid var(--rule-2);
+  color: var(--ink-3);
+  font: 600 11px/1 var(--font-mono);
+  text-align: center;
+  pointer-events: none;
+}
+
+.tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+  border-bottom: 1px solid var(--rule-2);
+}
+.tabs {
+  display: flex;
+  margin-bottom: -1px;
+}
+.tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 13px 16px 12px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.tabs button:hover {
+  color: var(--ink-2);
+}
+.tabs .count {
+  color: var(--ink-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.tabs button[aria-pressed='true'] {
+  color: var(--ink);
+}
+.tabs button[aria-pressed='true'] .count {
+  color: var(--signal-2);
+}
+.tabs button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  background: var(--signal);
+  box-shadow: 0 0 8px rgba(255, 122, 43, 0.6);
+}
+.tools-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 8px;
+}
 
 .quest-list {
-  display: grid;
-  gap: 6px;
-  padding: 6px 8px 12px;
+  min-height: 320px;
+  padding: 0 18px 18px;
 }
 .quest-list:focus {
   outline: none;
 }
 
 .group-head {
-  margin: 0;
-  font: inherit;
-}
-.group-toggle {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 14px 10px 8px;
-  border: 0;
-  background: none;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
+  margin: 0;
+  padding: 24px 4px 11px;
+  border-bottom: 1px solid var(--rule-2);
 }
-.group-toggle .avatar {
+.group-photo {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
 }
 .group-name {
-  font: 700 17px/1 var(--font-display);
-  letter-spacing: 0.1em;
+  font: 800 25px/0.85 var(--font-stencil);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.group-meta {
+.group-ru {
+  color: var(--ink-3);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.group-count {
   margin-left: auto;
-  color: var(--text-2);
-  font: 600 14px/1 var(--font-display);
-  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  font: 600 11.5px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
-}
-.group-shown {
-  color: var(--text-3);
-  font-size: 13px;
-}
-.chevron {
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--text-3);
-  border-bottom: 2px solid var(--text-3);
-  transform: rotate(45deg) translate(-2px, -2px);
-  transition: transform 0.15s ease;
-}
-.group-toggle[aria-expanded='false'] .chevron {
-  transform: rotate(-45deg);
-}
-.group-toggle:hover .chevron {
-  border-color: var(--text);
 }
 
 .quests {
-  display: grid;
-  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* A ledger line: lamp · quest · details · completion box. */
 .quest {
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 12px minmax(0, 1fr) auto 30px;
   align-items: center;
-  gap: 4px 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  transition: background 0.12s;
+  gap: 4px 16px;
+  padding: 12px 6px 12px 8px;
+  border-bottom: 1px dashed var(--rule-2);
 }
 .quest:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(233, 227, 211, 0.025);
 }
-.quest[aria-current='true'] {
-  background: rgba(205, 183, 135, 0.09);
-  box-shadow: inset 3px 0 0 var(--accent);
+.quest.is-open {
+  background: rgba(233, 227, 211, 0.035);
+}
+.quest[data-state='available'] > .lamp {
+  --c: var(--go);
+}
+.quest[data-state='locked'] > .lamp {
+  --c: var(--stop);
+}
+.quest[data-state='available'] > .lamp,
+.quest[data-state='locked'] > .lamp {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7) 0 16%, transparent 46%),
+    var(--c);
+  box-shadow:
+    0 0 5px var(--c),
+    0 0 12px color-mix(in srgb, var(--c) 40%, transparent);
 }
 
-.quest-open {
+.quest-main {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
   padding: 0;
   border: 0;
   background: none;
+  color: inherit;
   text-align: left;
   cursor: pointer;
 }
 .quest-name {
   overflow: hidden;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 15px;
-  white-space: nowrap;
+  color: var(--ink);
+  font: 600 15.5px/1.25 var(--font-ui);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.quest-open:hover .quest-name {
-  color: var(--accent-strong);
+.quest-main:hover .quest-name {
+  color: var(--signal-2);
 }
 .quest-sub {
   overflow: hidden;
-  color: var(--text-2);
-  font-size: 13px;
-  white-space: nowrap;
+  color: var(--ink-3);
+  font: 400 13px/1.35 var(--font-ui);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .quest-sub:empty {
   display: none;
 }
-.obj-count {
-  color: var(--ok);
-  font-weight: 600;
+.sub-more {
+  color: var(--ink-3);
+  font: 600 11px/1 var(--font-mono);
 }
-.lock-icon {
-  position: relative;
-  display: inline-block;
-  width: 9px;
-  height: 7px;
-  margin-right: 7px;
-  border: 1.5px solid currentColor;
-  border-radius: 2px;
-}
-.lock-icon::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  width: 5px;
-  height: 4px;
-  transform: translateX(-50%);
-  border: 1.5px solid currentColor;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
-}
-
-.quest-tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 5px;
-  max-width: 280px;
-}
-
 .quest[data-state='locked'] .quest-name {
-  color: var(--text-2);
+  color: var(--ink-2);
 }
 .quest[data-state='locked'] .quest-sub {
-  color: #c98a7f;
+  color: #cf9289;
 }
 .quest[data-state='completed'] .quest-name {
-  color: var(--text-3);
-  text-decoration: line-through;
-  text-decoration-color: rgba(140, 138, 129, 0.6);
-}
-.quest[data-state='completed'] .quest-tags {
-  opacity: 0.55;
+  color: var(--ink-3);
 }
 
-.skeleton {
+.quest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 12px;
+  max-width: 320px;
+  color: var(--ink-3);
+  font: 600 11px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.meta-kappa {
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 122, 43, 0.5);
+  color: var(--signal);
+}
+.meta-level.is-blocking {
+  color: var(--stop);
+}
+.meta-faction {
+  color: var(--ink-2);
+}
+.mini-stamp {
+  padding: 3px 7px 2px;
+  border: 2px solid currentColor;
+  color: var(--stamp);
+  font: 800 10px/1 var(--font-ui);
+  letter-spacing: 0.18em;
+  -webkit-mask: var(--ink-speckle) 0 0 / 120px 60px;
+  mask: var(--ink-speckle) 0 0 / 120px 60px;
+  transform: rotate(-4deg);
+}
+
+/* Completing a quest from the Available or Locked list: the stamp lands,
+   then the line clears. */
+.quest.is-stamping::after {
+  content: 'Выполнено';
+  position: absolute;
+  top: 32px;
+  right: 62px;
+  padding: 7px 16px 6px;
+  border: 4px double var(--stamp);
+  color: var(--stamp);
+  font: 800 20px/1 var(--font-ui);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  -webkit-mask: var(--ink-speckle) 0 0 / 180px 90px;
+  mask: var(--ink-speckle) 0 0 / 180px 90px;
+  transform: translateY(-50%) rotate(-6deg);
+  animation: stamp-slam 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.quest.is-stamping {
+  animation: thud 0.3s ease-out;
+}
+@keyframes stamp-slam {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) rotate(-6deg) scale(2.3);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) rotate(-6deg) scale(1);
+  }
+}
+@keyframes thud {
+  40% {
+    transform: translateY(1.5px);
+  }
+}
+
+/* The opened quest: objectives, what it needs, links. */
+.quest-more {
+  grid-column: 2 / -1;
   display: grid;
-  gap: 8px;
-  padding: 8px;
+  gap: 16px;
+  padding: 12px 0 6px;
 }
-.skeleton-row {
-  height: 52px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #15181c 0%, #1d2126 50%, #15181c 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+.more-block {
+  display: grid;
+  gap: 9px;
 }
-@keyframes shimmer {
+.objectives,
+.needs {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.objectives {
+  counter-reset: obj;
+}
+.objectives li,
+.needs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--rule-2);
+  background: rgba(7, 7, 6, 0.6);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.objectives li::before {
+  counter-increment: obj;
+  content: counter(obj, decimal-leading-zero);
+  color: var(--ink-3);
+  font: 600 11px/1 var(--font-mono);
+}
+.obj-flag,
+.obj-map,
+.needs .note {
+  color: var(--ink-3);
+  font: 600 10.5px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.needs li {
+  align-items: center;
+}
+.needs .lamp {
+  --c: var(--stop);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7) 0 16%, transparent 46%),
+    var(--c);
+  box-shadow: 0 0 5px var(--c);
+}
+.needs li[data-ok='true'] .lamp {
+  --c: var(--go);
+}
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 14px/1.3 var(--font-ui);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--rule-3);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.link-btn:hover {
+  color: var(--signal-2);
+  text-decoration-color: currentColor;
+}
+.more-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.more-links a {
+  color: var(--signal-2);
+  font: 700 11.5px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.more-links a:hover {
+  color: var(--ink);
+}
+
+/* Loading: a terminal line over faint ledger rows. */
+.loading {
+  padding-top: 22px;
+}
+.loading-line {
+  margin-bottom: 14px;
+  color: var(--ink-2);
+  font: 600 12px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 13px;
+  margin-left: 6px;
+  vertical-align: -2px;
+  background: var(--signal);
+  animation: blink 1s steps(2, jump-none) infinite;
+}
+.loading-row {
+  height: 54px;
+  border-bottom: 1px dashed var(--rule-2);
+  background: linear-gradient(90deg, transparent, rgba(233, 227, 211, 0.04), transparent)
+    0 0 / 200% 100%;
+  animation: sweep 1.6s linear infinite;
+}
+@keyframes sweep {
   to {
     background-position: -200% 0;
   }
 }
 
-/* ---------- detail ---------- */
+/* ---------- colophon ---------- */
 
-.detail {
-  position: sticky;
-  top: 16px;
+.colophon {
   display: grid;
-  align-content: start;
-  gap: 20px;
-  max-height: calc(100vh - 32px);
-  padding: 20px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  gap: 12px;
+  padding-bottom: 48px;
+  color: var(--ink-3);
+  font: 400 12px/1.6 var(--font-mono);
 }
-
-.detail-empty {
-  display: grid;
-  gap: 8px;
-  color: var(--text-2);
-}
-
-.detail-head {
-  position: relative;
-  display: grid;
-  gap: 8px;
-  padding-right: 2.2rem;
-}
-.detail-kicker {
-  color: var(--text-3);
-  font: 600 13px/1 var(--font-display);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.detail-title {
-  color: var(--text);
-  font: 700 30px/1.05 var(--font-display);
-  letter-spacing: 0.02em;
-}
-.detail-title:focus {
-  outline: none;
-}
-.detail-badges {
+.colophon-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-}
-
-.state-badge {
-  display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 0 9px;
-  border: 1px solid;
-  border-radius: 6px;
-  font: 700 12px/1 var(--font-display);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 8px 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-2);
 }
-.state-badge[data-state='available'] {
-  border-color: rgba(143, 196, 111, 0.45);
-  background: rgba(143, 196, 111, 0.1);
-  color: var(--ok);
+.colophon-gap {
+  flex: 1;
 }
-.state-badge[data-state='locked'] {
-  border-color: rgba(226, 112, 95, 0.45);
-  background: rgba(226, 112, 95, 0.1);
-  color: var(--danger);
-}
-.state-badge[data-state='completed'] {
-  border-color: var(--line-2);
-  color: var(--text-2);
+.fineprint {
+  max-width: 78ch;
 }
 
-.sheet-close {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: none;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line-2);
-  border-radius: 10px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
+/* ---------- smaller screens ---------- */
 
-.detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.detail-section {
-  display: grid;
-  gap: 8px;
-}
-.detail-section h3 {
-  color: var(--text-3);
-  font: 600 13px/1 var(--font-display);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.section-count {
-  margin-left: 6px;
-  color: var(--ok);
-}
-
-.objectives,
-.link-list,
-.rewards {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.objective {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-2);
-}
-.objective label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  line-height: 1.4;
-  cursor: pointer;
-}
-.objective.is-done {
-  border-color: rgba(143, 196, 111, 0.3);
-}
-.objective.is-done .objective-text {
-  color: var(--text-3);
-  text-decoration: line-through;
-  text-decoration-color: rgba(140, 138, 129, 0.6);
-}
-.objective-maps {
-  padding-left: 32px;
-  color: var(--text-3);
-  font: 600 12px/1 var(--font-display);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.link-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 10px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  border-left: 3px solid var(--line-2);
-}
-.link-row[data-state='completed'] {
-  border-left-color: var(--text-3);
-}
-.link-row[data-state='locked'] {
-  border-left-color: var(--danger);
-}
-.link-row[data-state='available'] {
-  border-left-color: var(--ok);
-}
-.link-row .text-btn {
-  font-size: 14px;
-  text-align: left;
-}
-.link-meta {
-  color: var(--text-3);
-  font-size: 13px;
-}
-
-.rewards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.rewards li {
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 14px;
-}
-
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 39;
-  background: rgba(5, 6, 8, 0.6);
-}
-
-/* ---------- responsive ---------- */
-
-@media (max-width: 1180px) {
-  .workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+@media (max-width: 1100px) {
+  .console {
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+  .quest-meta {
+    max-width: 210px;
   }
 }
 
+/* One column: the rail and desk dissolve so their panels can be reordered —
+   Kappa, settings, traders, then the quests. */
 @media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 1fr;
+  .console {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
   }
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .rail,
+  .desk {
+    display: contents;
   }
-
-  /* The detail panel becomes a bottom sheet. */
-  .detail {
-    position: fixed;
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    max-height: 88vh;
-    border-radius: 18px 18px 0 0;
-    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
-    background: var(--surface-solid);
-    transform: translateY(105%);
-    visibility: hidden;
-    transition:
-      transform 0.22s ease,
-      visibility 0s linear 0.22s;
+  .kappa {
+    order: 1;
   }
-  .detail.is-open {
-    transform: none;
-    visibility: visible;
-    transition: transform 0.22s ease;
+  .operator {
+    order: 2;
   }
-  .sheet-close {
+  .traders-panel {
+    order: 3;
+  }
+  .ledger {
+    order: 4;
+  }
+  .kappa {
     display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
   }
-  body.sheet-open {
-    overflow: hidden;
+  .kappa .panel-head {
+    grid-column: 1 / -1;
+  }
+  .kappa-readout {
+    grid-row: 2;
+    min-height: 0;
+    padding: 16px 12px 14px 16px;
+  }
+  .kappa-stats {
+    grid-row: 2;
+    grid-template-columns: none;
+    align-self: stretch;
+    align-content: center;
+    gap: 9px;
+    margin: 0;
+    padding: 12px 16px;
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+  .kappa-stats > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0;
+  }
+  .kappa-stats > div + div {
+    border-left: 0;
+  }
+  .kappa-stats dd {
+    margin: 0;
+    font-size: 15px;
+  }
+  .segbar {
+    grid-column: 1 / -1;
+    margin: 0 16px 16px;
+  }
+  .traders-panel .panel-head {
+    display: none;
+  }
+  /* Swipe through the traders; the right edge fades to show there's more. */
+  .traders {
+    display: flex;
+    padding-right: 48px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent);
+  }
+  .trader {
+    flex: none;
+    grid-template-columns: 30px auto;
+    grid-template-rows: auto;
+    column-gap: 10px;
+    padding: 10px 14px 10px 12px;
+    border-bottom: 0;
+    border-right: 1px solid var(--rule);
+  }
+  .trader[aria-pressed='true']::before {
+    top: auto;
+    right: 0;
+    width: auto;
+    height: 3px;
+  }
+  .trader-photo {
+    grid-row: auto;
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+  .trader-ru,
+  .trader-bar,
+  .trader-count {
+    display: none;
+  }
+  .trader-name {
+    font-size: 16px;
+  }
+  .op-link {
+    margin-left: 0;
+    flex-basis: 100%;
   }
 }
 
 @media (max-width: 640px) {
-  /* Slim tiles: label and number on one line, bar underneath. */
-  .stats {
-    gap: 8px;
+  .masthead,
+  .console,
+  .colophon {
+    padding-left: 12px;
+    padding-right: 12px;
   }
-  .stat {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 8px;
-    min-height: 0;
-    padding: 10px 12px;
+  .masthead {
+    padding-top: 14px;
   }
-  .stat .meter {
-    grid-column: 1 / -1;
-    height: 4px;
+  .masthead-row {
+    gap: 12px;
+    padding-bottom: 12px;
   }
-  .stat-label {
-    overflow: hidden;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .emblem {
+    width: 32px;
+    height: 32px;
   }
-  .stat-value {
-    font-size: 22px;
+  .wordmark {
+    gap: 12px;
   }
-  .stat-total {
-    font-size: 14px;
+  .wordmark-name {
+    font-size: 32px;
   }
-  .stat-sub {
-    display: none;
+  .wordmark-tag {
+    font-size: 9px;
+    letter-spacing: 0.14em;
   }
-  /* Labels above the controls so mode, faction and level share one row. */
-  .profile {
-    gap: 12px 10px;
-    padding: 10px 12px;
+  .raid {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
   }
-  .field {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+  .console {
+    padding-top: 14px;
   }
-  .field .segmented button {
+  .nixie-lg {
+    --w: 32px;
+    --h: 50px;
+    --gap: 4px;
+  }
+  .kappa-total {
+    font-size: 24px;
+  }
+  /* Mode, faction and level share one row on a phone. */
+  .operator {
+    gap: 12px;
+    padding: 14px;
+  }
+  .op-field {
+    gap: 7px;
+  }
+  .switch button {
     padding: 0 8px;
   }
-  .stepper button {
-    width: 30px;
+  .switch button::before {
+    display: none;
   }
-  .stepper input {
-    width: 40px;
+  .counter button {
+    width: 27px;
   }
-  .profile .data-status {
-    margin-left: 0;
-    flex-basis: 100%;
+  .counter input {
+    width: 38px;
   }
-  .board-head {
-    padding: 12px;
+  .ledger .panel-head {
+    display: none;
+  }
+  .ledger-tools {
+    padding: 14px 12px 0;
+  }
+  .search-prompt {
+    display: none;
+  }
+  .search input {
+    padding-left: 14px;
+  }
+  .tools-row {
+    border-bottom: 0;
+  }
+  .tabs {
+    width: 100%;
+    border-bottom: 1px solid var(--rule-2);
   }
   .tabs button {
+    flex: 1;
+    justify-content: center;
     gap: 5px;
-    padding: 0 4px;
-    font-size: 13px;
-    letter-spacing: 0.03em;
+    padding: 12px 4px 11px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
   }
-  .filter-row select {
-    flex: 1 1 6rem;
-    min-width: 0;
+  .tools-right {
+    padding-bottom: 0;
+  }
+  .quest-list {
+    padding: 0 12px 12px;
+  }
+  .group-name {
+    font-size: 22px;
   }
   .quest {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: 10px 8px;
+    grid-template-columns: 10px minmax(0, 1fr) 30px;
+    gap: 6px 12px;
+    padding: 12px 2px 12px 4px;
   }
-  .quest-tags {
+  .quest-meta {
     grid-column: 2;
+    grid-row: 2;
     justify-content: flex-start;
     max-width: none;
   }
-  .quest-check {
-    width: 26px;
-    height: 26px;
+  .stampbox {
+    grid-column: 3;
+    grid-row: 1 / 3;
   }
-  .group-shown {
-    display: none;
+  .quest-more {
+    grid-column: 1 / -1;
+  }
+  .quest.is-stamping::after {
+    right: 44px;
+    font-size: 14px;
+  }
+  .colophon-gap {
+    flex-basis: 100%;
+    height: 0;
   }
 }
 
-@media (max-width: 400px) {
-  .tabs button {
-    font-size: 12px;
-    letter-spacing: 0;
+/* Small phones (360px). */
+@media (max-width: 380px) {
+  .raid .plate {
+    display: none;
+  }
+  .wordmark-tag {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+  .kappa-stats dt {
+    white-space: nowrap;
+  }
+  .operator {
+    gap: 12px 8px;
+    padding: 14px 12px;
+  }
+  .nixie-lg {
+    --w: 28px;
+    --h: 44px;
+  }
+  .kappa-total {
+    font-size: 20px;
   }
 }
