@@ -1,8 +1,9 @@
-// Behaviour shared by every page's header and footer: the raid clocks and the
+// Behaviour for the page's header and footer: the nixie raid clocks and the
 // ASCII backdrop with its Animated / Still / Off switch.
 import { raidTime, formatClock, isDaytime } from './clock.js';
 import { BACKDROP_MODES, getSettings, updateSettings } from './settings.js';
 import { startBackdrop } from './backdrop.js';
+import { nixieHtml } from './nixie.js';
 
 export function startRaidClocks(root = document) {
   const clocks = [...root.querySelectorAll('[data-raid-clock]')];
@@ -13,9 +14,15 @@ export function startRaidClocks(root = document) {
     for (const el of clocks) {
       const time = raidTime(now, el.dataset.raidClock);
       const day = isDaytime(time);
-      el.querySelector('[data-time]').textContent = formatClock(time).slice(0, 5);
+      const text = formatClock(time).slice(0, 5);
+      const tubes = el.querySelector('[data-time]');
+      // Raid minutes tick about every 9 seconds; only redraw the tubes then.
+      if (tubes.dataset.value !== text) {
+        tubes.dataset.value = text;
+        tubes.innerHTML = nixieHtml(text);
+        tubes.setAttribute('aria-label', `${text}, ${day ? 'day' : 'night'}`);
+      }
       el.dataset.phase = day ? 'day' : 'night';
-      el.querySelector('[data-phase-label]').textContent = day ? 'Day' : 'Night';
     }
   };
 

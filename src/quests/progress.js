@@ -1,9 +1,8 @@
 // Quest progress, saved per game mode in this browser:
 //   { version: 1, modes: { regular: { tasks: { [taskId]: true }, objectives: { [objectiveId]: true } } } }
-// A quest's completion and its objective checkboxes are stored separately,
-// so un-ticking a quest brings back whatever objectives were ticked before.
+// The tracker only ticks whole quests now. Objective flags saved by earlier
+// versions are still carried through saves, exports and imports untouched.
 import { readJson, writeJson, storageKeys } from '../shared/storage.js';
-import { requiredObjectives } from './model.js';
 
 export const PROGRESS_KEY = 'eftracking.progress.v1';
 export const EXPORT_FORMAT = 'eftracking-progress';
@@ -104,41 +103,9 @@ export function saveProgress(progress) {
   writeJson(PROGRESS_KEY, progress);
 }
 
-export function isObjectiveChecked(b, task, objective) {
-  if (b.tasks[task.id] && !objective.optional) return true;
-  return Boolean(b.objectives[objective.id]);
-}
-
 export function setQuestDone(b, task, done) {
   if (done) b.tasks[task.id] = true;
   else delete b.tasks[task.id];
-}
-
-// Ticks or un-ticks one objective. Ticking the last required objective
-// completes the quest; un-ticking a required objective of a completed quest
-// re-opens it (keeping the other objectives ticked). Returns 'completed',
-// 'reopened' or null so the caller can tell the player what happened.
-export function setObjectiveDone(b, task, objectiveId, done) {
-  const objective = task.objectives.find(o => o.id === objectiveId);
-  if (!objective) return null;
-  const required = requiredObjectives(task);
-
-  if (b.tasks[task.id] && !objective.optional) {
-    if (done) return null;
-    delete b.tasks[task.id];
-    for (const o of required) b.objectives[o.id] = true;
-    delete b.objectives[objectiveId];
-    return 'reopened';
-  }
-
-  if (done) b.objectives[objectiveId] = true;
-  else delete b.objectives[objectiveId];
-
-  if (!b.tasks[task.id] && required.length && required.every(o => b.objectives[o.id])) {
-    b.tasks[task.id] = true;
-    return 'completed';
-  }
-  return null;
 }
 
 export function exportPayload(progress) {

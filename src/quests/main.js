@@ -1,4 +1,4 @@
-// Quest board page: wires data, progress, settings and the DOM together.
+// Quest ledger page: wires data, progress, settings and the DOM together.
 import { $ } from '../shared/html.js';
 import {
   getSettings,
@@ -8,6 +8,7 @@ import {
 } from '../shared/settings.js';
 import { readJson, writeJson } from '../shared/storage.js';
 import { setupBackdrop, startRaidClocks } from '../shared/chrome.js';
+import { installNixieGhost } from '../shared/nixie.js';
 import { shortDate, timeAgo } from '../shared/format.js';
 import {
   TABS,
@@ -31,18 +32,17 @@ import {
   modeBucket,
   parseImport,
   saveProgress,
-  setObjectiveDone,
   setQuestDone
 } from './progress.js';
 import {
-  detailHtml,
-  emptyListHtml,
+  emptyHtml,
+  kappaReadoutHtml,
+  kappaStatsHtml,
   listHtml,
-  skeletonHtml,
-  summaryHtml,
+  loadingHtml,
   tabLabel,
-  traderProgressLabel,
-  traderStripHtml
+  traderIndexHtml,
+  traderProgressLabel
 } from './view.js';
 
 const UI_KEY = 'eftracking.ui.v1';
@@ -52,12 +52,7 @@ function loadUi() {
   return {
     tab: TABS.includes(saved.tab) ? saved.tab : 'available',
     trader: typeof saved.trader === 'string' ? saved.trader : '',
-    map: typeof saved.map === 'string' ? saved.map : '',
-    kappa: saved.kappa === true,
-    lightkeeper: saved.lightkeeper === true,
-    collapsed:
-      saved.collapsed && typeof saved.collapsed === 'object' ? saved.collapsed : {},
-    selected: typeof saved.selected === 'string' ? saved.selected : null
+    kappa: saved.kappa === true
   };
 }
 
@@ -66,6 +61,8 @@ const state = {
   progress: loadProgress(),
   ui: loadUi(),
   query: '',
+  openId: null,
+  justStamped: null,
   catalog: null,
   statuses: new Map(),
   summary: null,
@@ -87,16 +84,15 @@ const el = {
   status: $('#data-status'),
   statusText: $('#data-status-text'),
   refresh: $('#refresh-btn'),
-  summary: $('#summary'),
+  kappaReadout: $('#kappa-readout'),
+  kappaBar: $('#kappa-bar'),
+  kappaStats: $('#kappa-stats'),
+  traders: $('#traders'),
   search: $('#search'),
   tabs: $('#tabs'),
-  traders: $('#trader-strip'),
-  map: $('#map-filter'),
-  flags: $('#flag-filters'),
+  kappaOnly: $('#kappa-only'),
   clear: $('#clear-filters'),
   list: $('#quest-list'),
-  detail: $('#detail'),
-  backdrop: $('#sheet-backdrop'),
   toast: $('#toast'),
   toastText: $('#toast-text'),
   toastAction: $('#toast-action'),
@@ -104,19 +100,12 @@ const el = {
   reset: $('#reset-btn')
 };
 
-const narrowScreen = matchMedia('(max-width: 900px)');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const bucket = () => modeBucket(state.progress, state.settings.mode);
 const saveUi = () => writeJson(UI_KEY, state.ui);
 const persistProgress = () => saveProgress(state.progress);
-const hasFilters = () =>
-  Boolean(
-    state.query.trim() ||
-    state.ui.trader ||
-    state.ui.map ||
-    state.ui.kappa ||
-    state.ui.lightkeeper
-  );
+const hasFilters = () => Boolean(state.query.trim() || state.ui.trader || state.ui.kappa);
+const rowFor = id => el.list.querySelector(`.quest[data-id="${CSS.escape(id)}"]`);
 
 function debounce(fn, ms) {
   let timer;
@@ -136,27 +125,22 @@ function recompute() {
 }
 
 function viewContext() {
-  const c = state.catalog;
   return {
-    byId: c.byId,
-    unlocks: c.unlocks,
-    traderImages: c.traderImages,
-    hasMapData: c.maps.length > 0,
+    byId: state.catalog.byId,
+    traderImages: state.catalog.traderImages,
     statuses: state.statuses,
     summary: state.summary,
-    bucket: bucket(),
     query: normalizeQuery(state.query),
     faction: state.settings.faction,
     level: state.settings.level,
-    selectedId: state.ui.selected,
-    collapsed: state.ui.collapsed
+    openId: state.openId,
+    justStamped: state.justStamped
   };
 }
 
 // ---------------------------------------------------------------- render
 
-const FOCUSABLE =
-  '[data-action="toggle"],[data-action="open"],[data-action="collapse"],[data-action="objective"],[data-action="close-detail"]';
+const FOCUSABLE = '[data-action="toggle"],[data-action="expand"],[data-action="jump"]';
 
 // Re-rendering replaces the elements, so put keyboard focus back on the same
 // control (or whatever took its place) afterwards.
@@ -170,10 +154,8 @@ function keepFocus(container, render) {
     container.contains(active) &&
     active.dataset.action
   ) {
-    const { action, id, trader } = active.dataset;
+    const { action, id } = active.dataset;
     if (id) selector = `[data-action="${action}"][data-id="${CSS.escape(id)}"]`;
-    else if (trader)
-      selector = `[data-action="${action}"][data-trader="${CSS.escape(trader)}"]`;
     index = [...container.querySelectorAll(FOCUSABLE)].indexOf(active);
   }
   render();
@@ -201,7 +183,7 @@ function renderOperator() {
   const hasFactionQuests = state.catalog?.tasks.some(t => t.faction !== 'Any');
   if (!state.settings.faction && hasFactionQuests) {
     hint =
-      'Pick BEAR or USEC to hide the other faction’s quests and get exact Kappa totals.';
+      'Pick BEAR or USEC to hide the other faction’s quests and get an exact Kappa count.';
   } else if (state.settings.level == null) {
     hint = 'Set your level to see which quests you can take right now.';
   }
@@ -227,7 +209,7 @@ function renderStatus() {
     }.`;
     tone = 'warn';
   } else if (d.refreshing) {
-    text = `${mode} data from ${timeAgo(d.savedAt)} · checking for updates…`;
+    text = `${mode} · data from ${timeAgo(d.savedAt)} · checking for updates…`;
     tone = 'busy';
   } else if (d.error) {
     text = `Offline — showing ${mode} data saved ${timeAgo(d.savedAt)}.`;
@@ -235,62 +217,65 @@ function renderStatus() {
   } else if (d.limited) {
     // tarkov.dev rejected the full query (its schema changed), so a simpler
     // one was used: progress works, but factions/maps/prerequisites may be missing.
-    text = `${mode} data from tarkov.dev (limited detail) · updated ${timeAgo(d.savedAt)}`;
+    text = `${mode} · tarkov.dev (limited detail) · updated ${timeAgo(d.savedAt)}`;
     tone = 'warn';
   } else {
-    text = `${mode} data from tarkov.dev · updated ${timeAgo(d.savedAt)}`;
+    text = `${mode} · live from tarkov.dev · updated ${timeAgo(d.savedAt)}`;
     tone = 'ok';
   }
   el.statusText.textContent = text;
   el.status.dataset.tone = tone;
   el.refresh.disabled = d.refreshing || (d.loading && !state.catalog);
-  el.refresh.textContent = state.catalog ? 'Refresh' : 'Retry';
+  el.refresh.textContent = state.catalog || d.loading ? 'Refresh' : 'Retry';
 }
 
-function renderSummary() {
-  el.summary.innerHTML = state.summary
-    ? summaryHtml(state.summary)
-    : '<div class="stat is-loading"></div>'.repeat(4);
-}
-
-// The trader strip and map list only change when new data arrives.
-let optionsFor = null;
-function renderFilterOptions() {
-  if (optionsFor === state.catalog) return;
-  optionsFor = state.catalog;
-  el.traders.innerHTML = traderStripHtml(state.catalog.traders, viewContext());
-  const option = (value, label) => {
-    const o = document.createElement('option');
-    o.value = value;
-    o.textContent = label;
-    return o;
-  };
-  el.map.replaceChildren(
-    option('', 'All maps'),
-    ...state.catalog.maps.map(m => option(m, m))
-  );
-  el.map.hidden = state.catalog.maps.length === 0;
-  renderTraderStrip();
-  // Bring a trader picked on an earlier visit into view.
-  const active = el.traders.querySelector('[aria-pressed="true"]');
-  if (active) {
-    el.traders.scrollLeft =
-      active.offsetLeft - (el.traders.clientWidth - active.offsetWidth) / 2;
+let lastKappa = null;
+function renderKappa() {
+  const s = state.summary;
+  if (!s) {
+    el.kappaReadout.innerHTML = kappaReadoutHtml(null);
+    el.kappaReadout.setAttribute('aria-label', 'Kappa progress loading');
+    el.kappaBar.style.setProperty('--fill', '0%');
+    el.kappaStats.innerHTML = '';
+    lastKappa = null;
+    return;
   }
-  updateStripEdges();
+  const { done, total } = s.kappa;
+  const key = `${done}/${total}`;
+  if (key !== lastKappa) {
+    el.kappaReadout.innerHTML = kappaReadoutHtml(s.kappa);
+    el.kappaReadout.setAttribute(
+      'aria-label',
+      total ? `${done} of ${total} Kappa quests done` : 'No Kappa data'
+    );
+    // Flicker the tubes as they light up and whenever the count changes,
+    // like a nixie re-striking.
+    if (!reducedMotion.matches) {
+      el.kappaReadout.classList.remove('is-flicker');
+      void el.kappaReadout.offsetWidth;
+      el.kappaReadout.classList.add('is-flicker');
+    }
+    lastKappa = key;
+  }
+  // The bar has 40 segments; light whole segments only.
+  const segments = total ? Math.round((done / total) * 40) : 0;
+  el.kappaBar.style.setProperty('--fill', `${(segments / 40) * 100}%`);
+  el.kappaStats.innerHTML = kappaStatsHtml(s);
 }
 
-// Show the fade and arrow on whichever side has more traders out of view.
-function updateStripEdges() {
-  const s = el.traders;
-  s.parentElement.classList.toggle('more-left', s.scrollLeft > 4);
-  s.parentElement.classList.toggle(
-    'more-right',
-    s.scrollLeft + s.clientWidth < s.scrollWidth - 4
-  );
-}
-
-function renderTraderStrip() {
+// Trader portraits only change when new data arrives; their pressed state
+// and progress are updated in place.
+let tradersFor = null;
+function renderTraders() {
+  if (!state.catalog) {
+    el.traders.innerHTML = '';
+    tradersFor = null;
+    return;
+  }
+  if (tradersFor !== state.catalog) {
+    tradersFor = state.catalog;
+    el.traders.innerHTML = traderIndexHtml(state.catalog.traders, viewContext());
+  }
   for (const btn of el.traders.children) {
     const { trader } = btn.dataset;
     const progress = trader
@@ -298,32 +283,29 @@ function renderTraderStrip() {
       : state.summary.all;
     btn.setAttribute('aria-pressed', String(trader === state.ui.trader));
     btn.title = traderProgressLabel(trader, progress);
-    btn.querySelector('.meter > span').style.width =
+    btn.querySelector('.trader-count').textContent = `${progress.done}/${progress.total}`;
+    btn.querySelector('.trader-bar > span').style.width =
       `${progress.total ? (progress.done / progress.total) * 100 : 0}%`;
   }
 }
 
-function renderFilters(counts) {
+function renderTools(counts) {
   for (const btn of el.tabs.querySelectorAll('button')) {
-    btn.innerHTML = tabLabel(btn.dataset.tab, counts[btn.dataset.tab] || 0);
+    btn.innerHTML = tabLabel(btn.dataset.tab, counts?.[btn.dataset.tab] || 0);
     btn.setAttribute('aria-pressed', String(btn.dataset.tab === state.ui.tab));
   }
-  renderTraderStrip();
-  el.map.value = state.ui.map;
-  for (const btn of el.flags.querySelectorAll('button')) {
-    btn.setAttribute('aria-pressed', String(Boolean(state.ui[btn.dataset.flag])));
-  }
+  el.kappaOnly.setAttribute('aria-pressed', String(state.ui.kappa));
   el.clear.hidden = !hasFilters();
 }
 
+let stampTimer = null;
 function renderList() {
+  clearTimeout(stampTimer);
   if (!state.catalog) {
-    el.list.innerHTML = state.data.loading
-      ? skeletonHtml()
-      : '<div class="empty"><p>Quests couldn’t be loaded. Check your connection, then press Retry above.</p></div>';
+    renderTools(null);
+    el.list.innerHTML = loadingHtml(!state.data.loading);
     return;
   }
-  renderFilterOptions();
   const filters = { ...state.ui, query: state.query };
   const { list, counts } = filterTasks(
     state.catalog,
@@ -331,39 +313,52 @@ function renderList() {
     filters,
     state.settings.faction
   );
-  renderFilters(counts);
+  renderTools(counts);
   const groups = groupByTrader(list);
   keepFocus(el.list, () => {
     el.list.innerHTML = groups.length
       ? listHtml(groups, viewContext())
-      : emptyListHtml(state.ui.tab, counts, hasFilters());
+      : emptyHtml(state.ui.tab, counts, hasFilters());
   });
-}
-
-function renderDetail() {
-  const task =
-    state.catalog && state.ui.selected ? state.catalog.byId.get(state.ui.selected) : null;
-  keepFocus(el.detail, () => {
-    el.detail.innerHTML = state.catalog ? detailHtml(task, viewContext()) : '';
-  });
-  if (!task) closeSheet({ restoreFocus: false });
 }
 
 function renderAll() {
   recompute();
   renderOperator();
   renderStatus();
-  renderSummary();
+  renderKappa();
+  renderTraders();
   renderList();
-  renderDetail();
 }
 
-function afterProgressChange() {
+// After ticking a quest: update the counters straight away. If the quest is
+// about to leave the list (it was in Available or Locked), stamp it first and
+// let the stamp land before the list redraws.
+function afterProgressChange({ stamped = null } = {}) {
   persistProgress();
   recompute();
-  renderSummary();
-  renderList();
-  renderDetail();
+  renderKappa();
+  renderTraders();
+  const row = stamped && rowFor(stamped);
+  const leaves = row && !['all', 'completed'].includes(state.ui.tab);
+  if (leaves && !reducedMotion.matches) {
+    row.classList.add('is-stamping');
+    row.querySelector('.stampbox')?.classList.add('just-stamped');
+    renderTools(
+      filterTasks(
+        state.catalog,
+        state.statuses,
+        { ...state.ui, query: state.query },
+        state.settings.faction
+      ).counts
+    );
+    clearTimeout(stampTimer);
+    stampTimer = setTimeout(renderList, 720);
+  } else {
+    state.justStamped = stamped;
+    renderList();
+    state.justStamped = null;
+  }
   celebrateKappa();
 }
 
@@ -397,50 +392,14 @@ function celebrateKappa() {
   if (complete && !b.kappaCelebrated) {
     b.kappaCelebrated = true;
     persistProgress();
-    showToast('Every Kappa-required quest is complete. Enjoy the container.');
+    showToast('Every Kappa quest is done. The container is yours.');
   } else if (!complete && b.kappaCelebrated) {
     delete b.kappaCelebrated;
     persistProgress();
   }
 }
 
-// ---------------------------------------------------------------- detail sheet (narrow screens)
-
-function openSheet() {
-  if (!narrowScreen.matches) return;
-  el.detail.classList.add('is-open');
-  el.backdrop.hidden = false;
-  document.body.classList.add('sheet-open');
-  $('#detail-title', el.detail)?.focus();
-}
-
-function closeSheet({ restoreFocus = true } = {}) {
-  if (!el.detail.classList.contains('is-open')) return;
-  el.detail.classList.remove('is-open');
-  el.backdrop.hidden = true;
-  document.body.classList.remove('sheet-open');
-  if (restoreFocus && state.ui.selected) {
-    el.list
-      .querySelector(`[data-action="open"][data-id="${CSS.escape(state.ui.selected)}"]`)
-      ?.focus();
-  }
-}
-
 // ---------------------------------------------------------------- actions
-
-function openQuest(id, { fromDetail = false } = {}) {
-  if (!state.catalog?.byId.has(id)) return;
-  state.ui.selected = id;
-  saveUi();
-  for (const row of el.list.querySelectorAll('.quest[aria-current]'))
-    row.removeAttribute('aria-current');
-  el.list
-    .querySelector(`.quest[data-id="${CSS.escape(id)}"]`)
-    ?.setAttribute('aria-current', 'true');
-  renderDetail();
-  if (narrowScreen.matches) openSheet();
-  else if (fromDetail) $('#detail-title', el.detail)?.focus();
-}
 
 function toggleQuest(id, done) {
   const task = state.catalog?.byId.get(id);
@@ -449,8 +408,8 @@ function toggleQuest(id, done) {
   const wasDone = Boolean(b.tasks[id]);
   if (wasDone === done) return;
   setQuestDone(b, task, done);
-  afterProgressChange();
-  showToast(done ? `Completed: ${task.name}` : `Marked not complete: ${task.name}`, {
+  afterProgressChange({ stamped: done ? id : null });
+  showToast(done ? `Done: ${task.name}` : `Not done: ${task.name}`, {
     label: 'Undo',
     run: () => {
       setQuestDone(b, task, wasDone);
@@ -459,26 +418,41 @@ function toggleQuest(id, done) {
   });
 }
 
-function toggleObjective(taskId, objectiveId, done) {
-  const task = state.catalog?.byId.get(taskId);
-  if (!task) return;
-  const result = setObjectiveDone(bucket(), task, objectiveId, done);
-  afterProgressChange();
-  if (result === 'completed')
-    showToast(`All objectives done — ${task.name} marked complete.`);
-  else if (result === 'reopened') showToast(`${task.name} is no longer marked complete.`);
+function toggleOpen(id) {
+  state.openId = state.openId === id ? null : id;
+  renderList();
+}
+
+// Show a prerequisite: clear the filters so it's in the list, open it and
+// scroll to it.
+function jumpTo(id) {
+  if (!state.catalog?.byId.has(id)) return;
+  state.query = '';
+  el.search.value = '';
+  Object.assign(state.ui, { tab: 'all', trader: '', kappa: false });
+  saveUi();
+  state.openId = id;
+  renderTraders();
+  renderList();
+  const button = rowFor(id)?.querySelector('[data-action="expand"]');
+  button?.scrollIntoView({
+    block: 'center',
+    behavior: reducedMotion.matches ? 'auto' : 'smooth'
+  });
+  button?.focus({ preventScroll: true });
 }
 
 function setFilter(patch) {
   Object.assign(state.ui, patch);
   saveUi();
+  renderTraders();
   renderList();
 }
 
 function clearFilters() {
   state.query = '';
   el.search.value = '';
-  setFilter({ trader: '', map: '', kappa: false, lightkeeper: false });
+  setFilter({ trader: '', kappa: false });
 }
 
 function setLevel(value) {
@@ -524,7 +498,7 @@ let resetTimer = null;
 function disarmReset() {
   clearTimeout(resetTimer);
   resetTimer = null;
-  el.reset.textContent = 'Reset progress';
+  el.reset.textContent = 'Reset';
   el.reset.classList.remove('is-armed');
 }
 
@@ -585,9 +559,8 @@ function applyTasks(rawTasks, mode, meta) {
   state.catalog = buildCatalog(rawTasks);
   state.data = { ...state.data, ...meta, mode, loading: false, refreshing: false };
   const c = state.catalog;
-  if (state.ui.selected && !c.byId.has(state.ui.selected)) state.ui.selected = null;
+  if (state.openId && !c.byId.has(state.openId)) state.openId = null;
   if (state.ui.trader && !c.traders.includes(state.ui.trader)) state.ui.trader = '';
-  if (state.ui.map && !c.maps.includes(state.ui.map)) state.ui.map = '';
   renderAll();
 }
 
@@ -657,6 +630,7 @@ function bindEvents() {
     const mode = e.target.closest('button')?.dataset.value;
     if (!mode || mode === state.settings.mode) return;
     state.settings = updateSettings({ mode });
+    state.openId = null;
     renderOperator();
     loadData();
   });
@@ -692,20 +666,19 @@ function bindEvents() {
       renderList();
     }, 80)
   );
+  el.search.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && el.search.value) {
+      el.search.value = '';
+      state.query = '';
+      renderList();
+    }
+  });
   el.tabs.addEventListener('click', e => {
     const tab = e.target.closest('button')?.dataset.tab;
     if (tab) setFilter({ tab });
   });
-  el.traders.addEventListener('scroll', updateStripEdges, { passive: true });
-  new ResizeObserver(updateStripEdges).observe(el.traders);
-  for (const arrow of el.traders.parentElement.querySelectorAll('[data-scroll]')) {
-    arrow.addEventListener('click', () =>
-      el.traders.scrollBy({
-        left: Number(arrow.dataset.scroll) * el.traders.clientWidth * 0.75,
-        behavior: reducedMotion.matches ? 'auto' : 'smooth'
-      })
-    );
-  }
+  el.kappaOnly.addEventListener('click', () => setFilter({ kappa: !state.ui.kappa }));
+  el.clear.addEventListener('click', clearFilters);
   el.traders.addEventListener('click', e => {
     const btn = e.target.closest('[data-trader]');
     if (!btn) return;
@@ -713,45 +686,18 @@ function bindEvents() {
     const { trader } = btn.dataset;
     setFilter({ trader: trader === state.ui.trader ? '' : trader });
   });
-  el.map.addEventListener('change', () => setFilter({ map: el.map.value }));
-  el.flags.addEventListener('click', e => {
-    const flag = e.target.closest('button')?.dataset.flag;
-    if (flag) setFilter({ [flag]: !state.ui[flag] });
-  });
-  el.clear.addEventListener('click', clearFilters);
 
   el.list.addEventListener('click', e => {
     const target = e.target.closest('[data-action]');
     const action = target?.dataset.action;
-    if (action === 'open') openQuest(target.dataset.id);
+    if (action === 'expand') toggleOpen(target.dataset.id);
+    else if (action === 'jump') jumpTo(target.dataset.id);
     else if (action === 'clear-filters') clearFilters();
-    else if (action === 'collapse') {
-      const { trader } = target.dataset;
-      if (state.ui.collapsed[trader]) delete state.ui.collapsed[trader];
-      else state.ui.collapsed[trader] = true;
-      saveUi();
-      renderList();
-    }
   });
   el.list.addEventListener('change', e => {
     const box = e.target.closest('[data-action="toggle"]');
     if (box) toggleQuest(box.dataset.id, box.checked);
   });
-
-  el.detail.addEventListener('click', e => {
-    const target = e.target.closest('[data-action]');
-    const action = target?.dataset.action;
-    if (action === 'toggle')
-      toggleQuest(target.dataset.id, !bucket().tasks[target.dataset.id]);
-    else if (action === 'open') openQuest(target.dataset.id, { fromDetail: true });
-    else if (action === 'close-detail') closeSheet();
-  });
-  el.detail.addEventListener('change', e => {
-    const box = e.target.closest('[data-action="objective"]');
-    if (box) toggleObjective(box.dataset.task, box.dataset.id, box.checked);
-  });
-  el.backdrop.addEventListener('click', () => closeSheet());
-  narrowScreen.addEventListener('change', () => closeSheet({ restoreFocus: false }));
 
   $('#export-btn').addEventListener('click', exportProgress);
   $('#import-btn').addEventListener('click', () => el.importFile.click());
@@ -771,8 +717,6 @@ function bindEvents() {
       e.preventDefault();
       el.search.focus();
       el.search.select();
-    } else if (e.key === 'Escape' && el.detail.classList.contains('is-open')) {
-      closeSheet();
     }
   });
 
@@ -785,6 +729,7 @@ function bindEvents() {
   });
 }
 
+installNixieGhost();
 bindEvents();
 startRaidClocks();
 renderAll();

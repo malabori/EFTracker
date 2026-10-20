@@ -3,12 +3,10 @@ import { normalizeTask } from '../src/quests/model.js';
 import {
   EXPORT_FORMAT,
   exportPayload,
-  isObjectiveChecked,
   mergeProgress,
   migrateLegacy,
   normalizeProgress,
   parseImport,
-  setObjectiveDone,
   setQuestDone
 } from '../src/quests/progress.js';
 
@@ -22,7 +20,6 @@ const quest = normalizeTask({
     { id: 'o3', description: 'Bonus', optional: true }
   ]
 });
-const fresh = () => ({ tasks: {}, objectives: {} });
 
 // What the Feb 2026 site (the "clean" branch) kept in localStorage.
 const boardState = {
@@ -75,40 +72,14 @@ describe('migrateLegacy', () => {
   });
 });
 
-describe('objective tracking', () => {
-  it('completes the quest when the last required objective is ticked', () => {
-    const b = fresh();
-    expect(setObjectiveDone(b, quest, 'o1', true)).toBeNull();
-    expect(setObjectiveDone(b, quest, 'o2', true)).toBe('completed');
+describe('setQuestDone', () => {
+  it('ticks and un-ticks a quest without touching saved objective flags', () => {
+    const b = { tasks: {}, objectives: { o1: true } };
+    setQuestDone(b, quest, true);
     expect(b.tasks.q1).toBe(true);
-  });
-
-  it('optional objectives never complete or reopen a quest', () => {
-    const b = fresh();
-    expect(setObjectiveDone(b, quest, 'o3', true)).toBeNull();
-    expect(b.tasks.q1).toBeUndefined();
-    setQuestDone(b, quest, true);
-    expect(setObjectiveDone(b, quest, 'o3', false)).toBeNull();
-    expect(b.tasks.q1).toBe(true);
-  });
-
-  it('un-ticking a required objective reopens the quest but keeps the others ticked', () => {
-    const b = fresh();
-    setQuestDone(b, quest, true);
-    expect(setObjectiveDone(b, quest, 'o1', false)).toBe('reopened');
-    expect(b.tasks.q1).toBeUndefined();
-    expect(isObjectiveChecked(b, quest, quest.objectives[0])).toBe(false);
-    expect(isObjectiveChecked(b, quest, quest.objectives[1])).toBe(true);
-  });
-
-  it('un-ticking a quest restores the objectives that were ticked before', () => {
-    const b = fresh();
-    setObjectiveDone(b, quest, 'o1', true);
-    setQuestDone(b, quest, true);
-    expect(isObjectiveChecked(b, quest, quest.objectives[1])).toBe(true);
     setQuestDone(b, quest, false);
-    expect(isObjectiveChecked(b, quest, quest.objectives[0])).toBe(true);
-    expect(isObjectiveChecked(b, quest, quest.objectives[1])).toBe(false);
+    expect(b.tasks.q1).toBeUndefined();
+    expect(b.objectives).toEqual({ o1: true });
   });
 });
 

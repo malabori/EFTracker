@@ -29,9 +29,7 @@ const filters = (overrides = {}) => ({
   tab: 'all',
   query: '',
   trader: '',
-  map: '',
   kappa: false,
-  lightkeeper: false,
   ...overrides
 });
 
@@ -109,15 +107,6 @@ describe('buildCatalog', () => {
       task('a', { name: 'Op - Part 2' })
     ]);
     expect(c.tasks.map(t => t.name)).toEqual(['Op - Part 2', 'Op - Part 10']);
-  });
-
-  it('records which quests each quest unlocks', () => {
-    const c = buildCatalog([
-      task('a'),
-      task('b', { requires: ['a'] }),
-      task('c', { requires: ['a'] })
-    ]);
-    expect(c.unlocks.get('a')).toEqual(['b', 'c']);
   });
 
   it('survives a prerequisite cycle', () => {
@@ -222,12 +211,11 @@ describe('filterTasks', () => {
     expect(ids('(')).toEqual([]);
   });
 
-  it('filters by trader, map, Kappa and Lightkeeper', () => {
+  it('filters by trader and Kappa', () => {
     const ids = f => filterTasks(catalog, statuses, filters(f), null).list.map(t => t.id);
     expect(ids({ trader: 'Therapist' })).toEqual(['shortage']);
-    expect(ids({ map: 'Customs' })).toEqual(['debut', 'checking']);
     expect(ids({ kappa: true })).toEqual(['debut', 'shortage']);
-    expect(ids({ lightkeeper: true })).toEqual(['shortage']);
+    expect(ids({ trader: 'Prapor', kappa: true })).toEqual(['debut']);
   });
 
   it('groups consecutive quests by trader', () => {

@@ -1,9 +1,9 @@
 {
   "name": "eftracking",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Escape from Tarkov quest tracker and flea price lookup. Static site, no build step.",
+  "description": "Escape from Tarkov quest and Kappa tracker. Static site, no build step.",
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
