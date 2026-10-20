@@ -32,8 +32,9 @@ src/quests/             quest board: data.js (fetch/cache), model.js (pure
                         view.js (HTML), main.js (wiring)
 src/flea/               flea page: data.js, model.js, main.js
 src/styles/             theme.css (shared look), quests.css, flea.css
-src/main.js,            legacy addresses the eftracking.com WordPress page loads;
-src/styles/main.css     they frame the site (see Deploying)
+src/main.js,            loaded by the eftracking.com WordPress home page; they
+src/styles/main.css     frame the site (see Deploying)
+wp/eftracker-wp.css     loaded by the WordPress site to style its blog pages
 data/                   offline quest snapshot, used only if tarkov.dev is down
 scripts/                update-snapshot.mjs (refreshes data/)
 tests/                  unit tests for the pure logic
@@ -46,13 +47,25 @@ Two pieces:
 1. **GitHub Pages** publishes the `clean` branch to
    <https://malabori.github.io/EFTracker/> about a minute after it changes
    (**Settings → Pages**). `main` is kept identical to `clean`.
-2. **eftracking.com** is a WordPress page that loads `src/main.js` and
-   `src/styles/main.css` from that GitHub address. Those two small files just show
-   the GitHub site in a full-window frame, so the WordPress page always shows the
-   latest version and never needs editing. **Don't move, rename or delete them.**
+2. **eftracking.com** is a WordPress (Divi) site. Its home page holds this snippet
+   in a Code module, which shows the GitHub site in a full-window frame — so the
+   home page always shows the latest version without being edited:
 
-Because the site runs in a frame on a different domain, progress the very old
-version saved on eftracking.com itself is passed into the frame once (see
+   ```html
+   <link
+     rel="stylesheet"
+     href="https://malabori.github.io/EFTracker/src/styles/main.css"
+   />
+   <div id="eft-app"></div>
+   <script src="https://malabori.github.io/EFTracker/src/main.js"></script>
+   ```
+
+   The site's blog pages also load `wp/eftracker-wp.css` from GitHub Pages for
+   their dark styling. **Don't move, rename or delete `src/main.js`,
+   `src/styles/main.css` or `wp/eftracker-wp.css`.**
+
+Because the site runs in a frame on a different domain, progress the old
+tracker saved on eftracking.com itself is passed into the frame once (see
 `src/main.js` and `takeLegacyHandoff` in `src/quests/main.js`).
 
 ## Working on it
