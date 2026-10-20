@@ -1,0 +1,181 @@
+/* Flea prices layout. Shared look comes from theme.css. */
+
+.controls {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+}
+.search-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.sort-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.sort-field select {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.8125rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.results {
+  min-height: 220px;
+}
+.results:focus {
+  outline: none;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.price-table th {
+  position: sticky;
+  top: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: #131a26;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.price-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(47, 58, 74, 0.6);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.price-table tbody tr:hover {
+  background: rgba(73, 88, 109, 0.12);
+}
+
+.item-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 15rem;
+  white-space: normal;
+}
+.item-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #121923;
+  overflow: hidden;
+}
+.item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.item-text {
+  display: grid;
+  gap: 2px;
+}
+.item-name {
+  color: var(--text);
+  font-weight: 600;
+}
+.item-meta {
+  color: var(--faint);
+  font-size: 0.75rem;
+}
+.item-meta a {
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--faint);
+}
+.change {
+  font-size: 0.6875rem;
+}
+.change.up {
+  color: var(--ok);
+}
+.change.down {
+  color: var(--danger);
+}
+
+.table-note {
+  padding: 10px 12px 14px;
+  color: var(--faint);
+  font-size: 0.75rem;
+}
+
+/* Phones: each row becomes a card. */
+@media (max-width: 760px) {
+  .search-row .btn {
+    padding-inline: 0.7rem;
+  }
+  .price-table thead {
+    display: none;
+  }
+  .price-table,
+  .price-table tbody,
+  .price-table tr {
+    display: block;
+  }
+  .price-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .price-table td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .price-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--faint);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .item-cell {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
