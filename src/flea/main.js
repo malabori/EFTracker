@@ -2,7 +2,7 @@
 import { $, esc } from '../shared/html.js';
 import { getSettings, updateSettings, MODE_LABELS } from '../shared/settings.js';
 import { readJson, writeJson } from '../shared/storage.js';
-import { setupCrtToggle, startRaidClocks } from '../shared/chrome.js';
+import { setupBackdrop, startRaidClocks } from '../shared/chrome.js';
 import { rub, timeAgo } from '../shared/format.js';
 import { SORT_KEYS, normalizeItem, sortItems } from './model.js';
 import { searchItems } from './data.js';
@@ -67,16 +67,22 @@ function links(item) {
   return out.join(' · ');
 }
 
+// Each cell is a main figure with a quieter line of context under it.
+const cell = (label, main, sub = '') =>
+  `<td data-label="${label}"><span class="cell-main">${main}</span>${sub ? `<span class="cell-sub">${sub}</span>` : ''}</td>`;
+
 function rowHtml(item) {
   const change =
     item.change48h == null
       ? ''
-      : `<span class="change ${item.change48h >= 0 ? 'up' : 'down'}">${item.change48h > 0 ? '+' : ''}${item.change48h.toFixed(1)}% / 48h</span>`;
+      : `<span class="change ${item.change48h >= 0 ? 'up' : 'down'}">${item.change48h > 0 ? '+' : ''}${item.change48h.toFixed(1)}% in 48h</span>`;
+  const range =
+    item.low24h || item.high24h ? `${rub(item.low24h)} – ${rub(item.high24h)}` : '';
   const sellTo =
     item.sellTo === 'flea'
-      ? '<span class="tag tag-kappa">Flea</span>'
+      ? '<span class="sell-to is-flea">Flea</span>'
       : item.sellTo === 'trader'
-        ? `<span class="tag">${esc(item.bestTrader.vendor)}</span>`
+        ? `<span class="sell-to">${esc(item.bestTrader.vendor)}</span>`
         : '—';
   const linkHtml = links(item);
   return `<tr>
@@ -87,13 +93,19 @@ function rowHtml(item) {
         <span class="item-meta">${esc(item.shortName)}${linkHtml ? ` · ${linkHtml}` : ''}</span>
       </span>
     </td>
-    <td data-label="Flea (lowest)">${item.noFlea ? '<span class="muted">Not sellable on flea</span>' : rub(item.flea)}</td>
-    <td data-label="24h average">${rub(item.avg24h)}${change ? `<br>${change}` : ''}</td>
-    <td data-label="24h range">${item.low24h || item.high24h ? `${rub(item.low24h)} – ${rub(item.high24h)}` : '—'}</td>
-    <td data-label="Best trader">${item.bestTrader ? `${esc(item.bestTrader.vendor)}<br>${rub(item.bestTrader.price)}` : '—'}</td>
-    <td data-label="Sell to">${sellTo}</td>
-    <td data-label="Per slot">${rub(item.perSlot)}${item.slots > 1 ? `<br><span class="muted">${item.slots} slots</span>` : ''}</td>
-    <td data-label="Updated">${item.updated ? esc(timeAgo(item.updated)) : '—'}</td>
+    ${
+      item.noFlea
+        ? cell('Flea (lowest)', '<span class="muted">Not sellable on flea</span>')
+        : cell(
+            'Flea (lowest)',
+            rub(item.flea),
+            item.updated ? esc(`updated ${timeAgo(item.updated)}`) : ''
+          )
+    }
+    ${cell('24h average', rub(item.avg24h), [change, range].filter(Boolean).join(' · '))}
+    ${item.bestTrader ? cell('Best trader', rub(item.bestTrader.price), esc(item.bestTrader.vendor)) : cell('Best trader', '—')}
+    ${cell('Sell to', sellTo)}
+    ${cell('Per slot', rub(item.perSlot), item.slots > 1 ? `${item.slots} slots` : '')}
   </tr>`;
 }
 
@@ -120,8 +132,7 @@ function renderResults() {
       <table class="price-table">
         <thead><tr>
           <th scope="col">Item</th><th scope="col">Flea (lowest)</th><th scope="col">24h average</th>
-          <th scope="col">24h range</th><th scope="col">Best trader</th><th scope="col">Sell to</th>
-          <th scope="col">Per slot</th><th scope="col">Updated</th>
+          <th scope="col">Best trader</th><th scope="col">Sell to</th><th scope="col">Per slot</th>
         </tr></thead>
         <tbody>${sortItems(state.items, state.sort).map(rowHtml).join('')}</tbody>
       </table>
@@ -219,7 +230,7 @@ document.addEventListener('keydown', e => {
 setInterval(renderStatus, 60_000);
 
 startRaidClocks();
-setupCrtToggle($('#crt-toggle'));
 el.search.value = state.query;
 render();
 runSearch();
+setupBackdrop($('#backdrop'), $('#backdrop-toggle'));

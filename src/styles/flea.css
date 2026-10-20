@@ -1,52 +1,47 @@
 /* Flea prices layout. Shared look comes from theme.css. */
 
-.controls {
+.page {
   display: grid;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 16px;
+  padding-bottom: 24px;
 }
 
-.search-row {
-  display: flex;
-  gap: 8px;
-}
-.search-row input {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.9375rem;
+/* ---------- lookup ---------- */
+
+.lookup {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
 }
 
-.control-row {
+.lookup-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.lookup-title {
+  font: 700 28px/1 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
+.lookup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
 .sort-field {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.sort-field select {
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: 0.8125rem;
+  gap: 10px;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+/* ---------- results ---------- */
 
-.results {
-  min-height: 220px;
-}
 .results:focus {
   outline: none;
 }
@@ -58,47 +53,59 @@
 .price-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
 }
 .price-table th {
-  position: sticky;
-  top: 0;
-  padding: 8px 10px;
+  padding: 14px 14px 10px;
   border-bottom: 1px solid var(--line);
-  background: #131a26;
-  color: var(--muted);
-  font-size: 0.6875rem;
-  font-weight: 500;
+  color: var(--text-3);
+  font: 600 13px/1 var(--font-display);
+  letter-spacing: 0.12em;
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
   white-space: nowrap;
 }
 .price-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(47, 58, 74, 0.6);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
   vertical-align: middle;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.price-table tbody tr:last-child td {
+  border-bottom: 0;
+}
 .price-table tbody tr:hover {
-  background: rgba(73, 88, 109, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cell-main {
+  display: block;
+  color: var(--text);
+  font: 600 17px/1.2 var(--font-display);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.cell-sub {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-3);
+  font-size: 13px;
 }
 
 .item-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 15rem;
+  gap: 12px;
+  min-width: 16rem;
   white-space: normal;
 }
 .item-icon {
-  width: 48px;
-  height: 48px;
   flex: none;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #121923;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)), var(--surface-3);
   overflow: hidden;
 }
 .item-icon img {
@@ -108,25 +115,21 @@
 }
 .item-text {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 .item-name {
   color: var(--text);
   font-weight: 600;
+  font-size: 15px;
 }
 .item-meta {
-  color: var(--faint);
-  font-size: 0.75rem;
-}
-.item-meta a {
-  color: var(--accent);
+  color: var(--text-3);
+  font-size: 13px;
 }
 
 .muted {
-  color: var(--faint);
-}
-.change {
-  font-size: 0.6875rem;
+  color: var(--text-3);
+  font: 400 14px/1.3 var(--font);
 }
 .change.up {
   color: var(--ok);
@@ -135,30 +138,51 @@
   color: var(--danger);
 }
 
+.sell-to {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  color: var(--text);
+  font: 600 14px/1 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sell-to.is-flea {
+  border-color: rgba(205, 183, 135, 0.5);
+  background: rgba(205, 183, 135, 0.12);
+  color: var(--accent-strong);
+}
+
 .table-note {
-  padding: 10px 12px 14px;
-  color: var(--faint);
-  font-size: 0.75rem;
+  padding: 12px 14px 16px;
+  border-top: 1px solid var(--line);
+  color: var(--text-3);
+  font-size: 13px;
 }
 
 /* Phones: each row becomes a card. */
 @media (max-width: 760px) {
-  .search-row .btn {
-    padding-inline: 0.7rem;
+  .lookup {
+    padding: 14px;
+  }
+  .lookup-title {
+    font-size: 22px;
   }
   .price-table thead {
     display: none;
   }
   .price-table,
-  .price-table tbody,
-  .price-table tr {
+  .price-table tbody {
     display: block;
   }
   .price-table tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px 12px;
-    padding: 12px;
+    gap: 12px 14px;
+    padding: 14px;
     border-bottom: 1px solid var(--line);
   }
   .price-table td {
@@ -169,10 +193,11 @@
   .price-table td[data-label]::before {
     content: attr(data-label);
     display: block;
-    color: var(--faint);
-    font-size: 0.625rem;
+    margin-bottom: 4px;
+    color: var(--text-3);
+    font: 600 12px/1 var(--font-display);
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
   }
   .item-cell {
     grid-column: 1 / -1;

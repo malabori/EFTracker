@@ -117,22 +117,23 @@ describe('settings', () => {
       mode: 'regular',
       faction: null,
       level: null,
-      crt: true
+      backdrop: 'animated'
     });
     expect(
-      normalizeSettings({ mode: 'pve', faction: 'USEC', level: '42', crt: false })
+      normalizeSettings({ mode: 'pve', faction: 'USEC', level: '42', backdrop: 'still' })
     ).toEqual({
       mode: 'pve',
       faction: 'USEC',
       level: 42,
-      crt: false
+      backdrop: 'still'
     });
     expect(
-      normalizeSettings({ mode: 'arena', faction: 'scav', level: 1.5 })
-    ).toMatchObject({
+      normalizeSettings({ mode: 'arena', faction: 'scav', level: 1.5, backdrop: 'loud' })
+    ).toEqual({
       mode: 'regular',
       faction: null,
-      level: null
+      level: null,
+      backdrop: 'animated'
     });
   });
 
