@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flea Prices — EFTracking</title>
+    <meta
+      name="description"
+      content="Look up Escape from Tarkov flea market prices for PvP and PvE: lowest listing, 24-hour average, best trader offer and value per slot."
+    />
+    <meta name="theme-color" content="#0d1118" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111722'/%3E%3Cpath d='M9 8h14v3H13v3.5h8v3h-8V21h10v3H9z' fill='%23f0d7a2'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="./src/styles/theme.css" />
+    <link rel="stylesheet" href="./src/styles/flea.css" />
+    <script>
+      try {
+        if (
+          JSON.parse(localStorage.getItem('eftracking.settings.v1') || '{}').crt === false
+        )
+          document.documentElement.classList.add('no-crt');
+      } catch (e) {}
+    </script>
+    <script type="module" src="./src/flea/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#results">Skip to results</a>
+    <div class="page">
+      <header class="masthead panel">
+        <div class="brand">
+          <p class="kicker">Escape from Tarkov // EFTracking</p>
+          <h1 class="title">Flea Prices</h1>
+        </div>
+        <nav class="site-nav" aria-label="Pages">
+          <a href="./index.html">Quest Board</a>
+          <a href="./flea.html" aria-current="page">Flea Prices</a>
+        </nav>
+        <div class="raid-clocks" role="group" aria-label="Current in-raid times">
+          <span class="clock-label">Raid time</span>
+          <span
+            class="clock"
+            data-raid-clock="left"
+            title="Left time option in the raid menu"
+          >
+            <span class="phase-icon" aria-hidden="true"></span>
+            <span data-time>--:--:--</span>
+            <span class="sr-only" data-phase-label></span>
+          </span>
+          <span
+            class="clock"
+            data-raid-clock="right"
+            title="Right time option in the raid menu"
+          >
+            <span class="phase-icon" aria-hidden="true"></span>
+            <span data-time>--:--:--</span>
+            <span class="sr-only" data-phase-label></span>
+          </span>
+        </div>
+      </header>
+
+      <section class="controls panel" aria-label="Search">
+        <form class="search-row" id="search-form" role="search" autocomplete="off">
+          <input
+            id="search"
+            type="search"
+            placeholder="Item name, e.g. Graphics card, LEDX, M855A1…"
+            aria-label="Item name"
+          />
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        <div class="control-row">
+          <div class="segmented" role="group" aria-label="Game mode" data-setting="mode">
+            <button type="button" data-value="regular" aria-pressed="true">PvP</button>
+            <button type="button" data-value="pve" aria-pressed="false">PvE</button>
+          </div>
+          <label class="sort-field">
+            <span>Sort</span>
+            <select id="sort">
+              <option value="relevance">Best match</option>
+              <option value="flea">Flea price</option>
+              <option value="avg">24h average</option>
+              <option value="trader">Best trader offer</option>
+              <option value="slot">Value per slot</option>
+            </select>
+          </label>
+          <div class="chips" id="quick-chips" aria-label="Quick searches">
+            <button type="button" class="chip" data-query="Graphics card">
+              Graphics card
+            </button>
+            <button type="button" class="chip" data-query="LEDX">LEDX</button>
+            <button type="button" class="chip" data-query="Fuel conditioner">
+              Fuel conditioner
+            </button>
+            <button type="button" class="chip" data-query="Moonshine">Moonshine</button>
+          </div>
+        </div>
+        <div class="data-status" id="data-status" data-tone="ok">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="data-status-text" role="status"></span>
+          <button type="button" class="text-btn" id="retry-btn" hidden>Retry</button>
+        </div>
+      </section>
+
+      <main class="panel results" id="results" tabindex="-1" aria-label="Prices"></main>
+
+      <footer class="site-footer">
+        <div class="footer-tools">
+          <button type="button" class="btn" id="crt-toggle" aria-pressed="true">
+            CRT effect: on
+          </button>
+        </div>
+        <p class="fineprint">
+          Price data comes from
+          <a href="https://tarkov.dev" target="_blank" rel="noopener">tarkov.dev</a>, a
+          community project, and can lag the in-game market by a few minutes. EFTracking
+          is a fan site and is not affiliated with Battlestate Games.
+        </p>
+      </footer>
+    </div>
+    <noscript
+      ><p class="noscript">EFTracking needs JavaScript to look up prices.</p></noscript
+    >
+  </body>
+</html>

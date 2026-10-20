@@ -4,16 +4,14 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**']
+    ignores: ['node_modules/**', 'data/**']
   },
   js.configs.recommended,
   {
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',
-      globals: {
-        ...globals.browser
-      }
+      globals: { ...globals.browser }
     },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
@@ -23,20 +21,9 @@ export default [
     }
   },
   {
-    files: ['**/*.test.js'],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        describe: 'readonly',
-        it: 'readonly',
-        expect: 'readonly',
-        vi: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly'
-      }
-    }
+    files: ['scripts/**', 'tests/**', '*.config.js'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' }
   },
   prettier
 ];

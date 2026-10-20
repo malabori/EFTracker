@@ -1,124 +1,88 @@
-# EFTRACKER
+# EFTracking
 
-A single-page web app that tracks **Escape From Tarkov** quest progress.
-Pulls the live quest list from the public [Tarkov.dev](https://tarkov.dev)
-GraphQL API, opens on a **Briefing** view that recommends what to do
-next, and falls back to a per-trader **List** view when you want to dig
-through everything. Highlights Kappa-required quests, supports search +
-filter, orders quests by prerequisite chain within each trader, and
-persists progress to `localStorage`.
+Escape from Tarkov quest tracker and flea price lookup — the site behind
+[eftracking.com](https://eftracking.com).
 
-The look is a classified-intel dossier: rubber-stamp completion overlays,
-classification ribbons, scanline texture. No framework. No backend. No
-tracking.
+- **Quest Board** (`index.html`): every quest grouped by trader in unlock order,
+  split into _Available_, _Locked_ and _Completed_. Set your game mode, faction and
+  level and the board shows what you can actually take right now, why the rest is
+  locked, and your Kappa and Lightkeeper progress. Tick off quests or individual
+  objectives; filter by trader, map, Kappa or Lightkeeper; search names, objectives,
+  items and maps.
+- **Flea Prices** (`flea.html`): lowest flea listing, 24-hour average and range,
+  best trader offer, where to sell, and value per inventory slot — for PvP or PvE.
 
-## Keyboard
+All data comes live from [tarkov.dev](https://tarkov.dev)'s free community API.
+There is no account and no server: progress is saved in the visitor's browser
+(with export/import to move between devices).
 
-| key                  | does                                                |
-| -------------------- | --------------------------------------------------- |
-| `Cmd/Ctrl+K`         | Open the command palette (quests, traders, actions) |
-| `/`                  | Focus the inline search                             |
-| `?`                  | Show the keyboard shortcut toast                    |
-| `Esc`                | Close the palette / off-canvas / styled confirm     |
-| `↑` / `↓` in palette | Move selection · `↵` runs it                        |
+## How the site is built
 
-## Quick start
+Plain HTML, CSS and JavaScript modules — **no build step**. The files in this repo
+are exactly what visitors download, so any static host works (it's on GitHub
+Pages). Don't add anything that needs compiling (npm imports in `src/`, TypeScript,
+CSS preprocessors); the browser loads `src/` directly.
+
+```
+index.html, flea.html   the two pages (static markup)
+src/shared/             used by both pages: API client, settings, storage,
+                        raid clock, formatting, header/footer behaviour
+src/quests/             quest board: data.js (fetch/cache), model.js (pure
+                        quest logic), progress.js (saving + migration),
+                        view.js (HTML), main.js (wiring)
+src/flea/               flea page: data.js, model.js, main.js
+src/styles/             theme.css (shared look), quests.css, flea.css
+data/                   offline quest snapshot, used only if tarkov.dev is down
+scripts/                update-snapshot.mjs (refreshes data/)
+tests/                  unit tests for the pure logic
+```
+
+## Deploying
+
+GitHub Pages publishes the site straight from a branch: whatever is on that branch
+is live about a minute after it changes. Check which branch under
+**Settings → Pages → Build and deployment → Branch** — as of October 2026 it was
+set to `clean`, so changes merged into `main` don't appear on the site until Pages
+publishes `main` (or `main` is merged into `clean`).
+
+When switching the branch, confirm the **Custom domain** box on the same page
+still says `eftracking.com`.
+
+## Working on it
 
 ```bash
 npm install
-npm run dev        # vite dev server with HMR
+npm run dev      # local server with live reload at http://localhost:5173
+npm run check    # lint + formatting + unit tests (what CI runs)
+npm run snapshot # refresh data/snapshot-*.json from tarkov.dev (needs internet)
 ```
 
-Open the URL printed by Vite (usually `http://localhost:5173`).
+## Data and correctness notes
 
-## Scripts
+- Quests come from `tasks(gameMode: regular | pve)`. Faction-specific quests use
+  `factionName`, so picking BEAR or USEC hides the other faction's versions and
+  keeps Kappa totals achievable.
+- A quest is _locked_ until its prerequisites are complete (a requirement that only
+  needs the quest accepted counts once that quest is unlocked; requirements met by
+  _failing_ a quest can't be tracked and never block) and, if you set a level, until
+  you reach its minimum level.
+- Maps come from each objective's map data, not guessed from the text.
+- If tarkov.dev ever rejects part of the query (its schema changed), the site
+  retries with a smaller query and the status line says **limited detail** — a cue
+  to update `QUEST_QUERY` in `src/quests/data.js`.
+- The raid clocks use tarkov.dev's formula: in-raid time runs at 7× real time from
+  Moscow time, and the raid menu's two options are 12 hours apart.
 
-| script                 | what it does                        |
-| ---------------------- | ----------------------------------- |
-| `npm run dev`          | Vite dev server                     |
-| `npm run build`        | Production bundle to `dist/`        |
-| `npm run preview`      | Serve the built bundle locally      |
-| `npm test`             | Vitest run (pure-helper unit tests) |
-| `npm run test:watch`   | Vitest in watch mode                |
-| `npm run lint`         | ESLint over JS                      |
-| `npm run format`       | Prettier write                      |
-| `npm run format:check` | Prettier check (used in CI)         |
+## Saved data (localStorage)
 
-CI (`.github/workflows/ci.yml`) runs lint → format:check → test → build
-on every push and PR to `main`.
+| key                          | contents                                               |
+| ---------------------------- | ------------------------------------------------------ |
+| `eftracking.progress.v1`     | completed quests and ticked objectives, per game mode  |
+| `eftracking.settings.v1`     | mode, faction, level, CRT effect                       |
+| `eftracking.ui.v1`           | quest board filters, collapsed traders, selected quest |
+| `eftracking.flea.v1`         | last flea search and sort                              |
+| `eftracking.tasks.v1.<mode>` | cached quest data (refreshed after 6 hours)            |
 
-## Project layout
-
-```
-src/
-  main.js                  entry — wires init() + load()
-  state.js                 shared singleton state + DOM refs
-  storage.js               safe localStorage wrappers
-  api.js                   Tarkov.dev fetch + 12 h cache
-  lib.js                   pure helpers (escape, hi, parsePartIndex,
-                           topoSortByTrader, normalizeProgressPayload)
-  recommendations.js       getNextUp / mapsForTask / repRewardsForTask
-  dom.js                   el() — small element builder
-  shell.js                 outer HTML shell template + ref binding +
-                           mobile bottom-tab nav
-  background.js            background grid + noise + watermark
-  confetti.js              kappa-celebration canvas animation
-  nav.js                   burger menu + mobile bottom-tab handlers
-  palette.js               command palette (Cmd/Ctrl+K)
-  keyboard.js              global keyboard shortcuts
-  render.js                briefing + list views, stats, toast,
-                           partial updates, import/export, styled confirm
-  *.test.js                Vitest suites
-  styles/
-    main.css               layered CSS (base, layout, components, utilities) —
-                           sidebar is CSS-grid + position: sticky
-    tokens.css             design tokens + @property registrations
-
-embed/
-  eftracker-embed.js   <eftracker-embed src="…" allowed-hosts="a,b">
-                       web component that inlines a remote HTML file
-                       into a host page. Defaults to same-origin only;
-                       cross-origin requires allowed-hosts opt-in.
-
-wp/
-  eftracker-wp.css     WordPress skin applied to blog/archive/single
-                       templates so they share the EFTRACKER look.
-
-index.html             dev/build mount point — referenced by Vite.
-```
-
-`embed/` and `wp/` are static assets shipped alongside the built app.
-They are not part of the Vite bundle.
-
-## How quest ordering works
-
-`src/lib.js → topoSortByTrader` assigns each task a "depth" equal to one
-more than the max depth of its same-trader prerequisites (with a
-`visiting` set to break cycles). Sorting by
-`(depth, minPlayerLevel, partIndex, name)` produces a topo-consistent
-ordering with a single `Array.sort` — prereqs always precede dependents.
-
-Roman / Arabic "Part N" suffixes are parsed by `parsePartIndex` so
-"… Part II" sorts before "… Part X".
-
-## Progress storage
-
-| key                        | what                                            |
-| -------------------------- | ----------------------------------------------- |
-| `eft-task-progress-stable` | `{ [taskId]: true }` map of completions         |
-| `eft-ui`                   | `{ collapsed, openTask, view }` UI prefs        |
-| `eft-kappa-celebrated`     | `true` once the kappa confetti fired            |
-| `eft_tasks_cache_v3`       | `{ ts, data }` — last GraphQL payload, 12 h TTL |
-
-All access is wrapped in `safe*` helpers in `src/storage.js` so a
-disabled / full `localStorage` doesn't crash the app.
-
-## Contributing
-
-Keep the patches small and self-contained. Run before committing:
-
-```bash
-npm run lint
-npm run format
-npm test
-```
+On first load, progress saved by earlier versions of the site
+(`eft_tracker_state_v*` from the February 2026 Quest Board, `eft-task-progress-stable`
+from 2025) is imported automatically; the old keys are left untouched.

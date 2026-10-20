@@ -3,26 +3,206 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>EFTRACKER</title>
-    <link rel="stylesheet" href="./src/styles/main.css" />
-    <style>
-      html,
-      body {
-        background: #0a0c0e !important;
-      }
-      body {
-        margin: 0;
-        min-height: 100vh;
-      }
-    </style>
+    <title>EFTracking — Escape from Tarkov Quest Tracker</title>
+    <meta
+      name="description"
+      content="Track Escape from Tarkov quests, Kappa and Lightkeeper progress by trader and map, for PvP and PvE. Free, no account — progress stays in your browser."
+    />
+    <meta name="theme-color" content="#0d1118" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111722'/%3E%3Cpath d='M9 8h14v3H13v3.5h8v3h-8V21h10v3H9z' fill='%23f0d7a2'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="./src/styles/theme.css" />
+    <link rel="stylesheet" href="./src/styles/quests.css" />
+    <script>
+      // Apply the saved CRT preference before first paint.
+      try {
+        if (
+          JSON.parse(localStorage.getItem('eftracking.settings.v1') || '{}').crt === false
+        )
+          document.documentElement.classList.add('no-crt');
+      } catch (e) {}
+    </script>
+    <script type="module" src="./src/quests/main.js"></script>
   </head>
   <body>
-    <div id="eft-app">
-      <p class="nojs">Loading EFTRACKER… If nothing appears, please enable JavaScript.</p>
+    <a class="skip-link" href="#quest-list">Skip to quests</a>
+    <div class="page">
+      <header class="masthead panel">
+        <div class="brand">
+          <p class="kicker">Escape from Tarkov // EFTracking</p>
+          <h1 class="title">Quest Board</h1>
+        </div>
+        <nav class="site-nav" aria-label="Pages">
+          <a href="./index.html" aria-current="page">Quest Board</a>
+          <a href="./flea.html">Flea Prices</a>
+        </nav>
+        <div class="raid-clocks" role="group" aria-label="Current in-raid times">
+          <span class="clock-label">Raid time</span>
+          <span
+            class="clock"
+            data-raid-clock="left"
+            title="Left time option in the raid menu"
+          >
+            <span class="phase-icon" aria-hidden="true"></span>
+            <span data-time>--:--:--</span>
+            <span class="sr-only" data-phase-label></span>
+          </span>
+          <span
+            class="clock"
+            data-raid-clock="right"
+            title="Right time option in the raid menu"
+          >
+            <span class="phase-icon" aria-hidden="true"></span>
+            <span data-time>--:--:--</span>
+            <span class="sr-only" data-phase-label></span>
+          </span>
+        </div>
+      </header>
+
+      <section class="operator panel" aria-label="Your profile">
+        <div class="field">
+          <span class="field-label" id="mode-label">Mode</span>
+          <div
+            class="segmented"
+            role="group"
+            aria-labelledby="mode-label"
+            data-setting="mode"
+          >
+            <button type="button" data-value="regular" aria-pressed="true">PvP</button>
+            <button type="button" data-value="pve" aria-pressed="false">PvE</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label" id="faction-label">Faction</span>
+          <div
+            class="segmented"
+            role="group"
+            aria-labelledby="faction-label"
+            data-setting="faction"
+          >
+            <button type="button" data-value="BEAR" aria-pressed="false">BEAR</button>
+            <button type="button" data-value="USEC" aria-pressed="false">USEC</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="level-input">Level</label>
+          <div class="stepper">
+            <button type="button" data-level-step="-1" aria-label="Lower level">−</button>
+            <input
+              id="level-input"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="99"
+              placeholder="?"
+            />
+            <button type="button" data-level-step="1" aria-label="Raise level">+</button>
+          </div>
+        </div>
+        <div class="data-status" id="data-status" data-tone="busy">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="data-status-text" role="status">Loading quests…</span>
+          <button type="button" class="text-btn" id="refresh-btn">Refresh</button>
+        </div>
+        <p class="profile-hint" id="profile-hint" hidden></p>
+      </section>
+
+      <section class="summary" id="summary" aria-label="Progress"></section>
+
+      <main class="workspace">
+        <section class="board panel" aria-labelledby="board-title">
+          <h2 id="board-title" class="sr-only">Quests</h2>
+          <div class="filters">
+            <div class="search-box">
+              <input
+                id="search"
+                type="search"
+                placeholder="Search quests, objectives, items, maps…"
+                autocomplete="off"
+                aria-label="Search quests"
+              />
+              <kbd aria-hidden="true">/</kbd>
+            </div>
+            <div class="tabs" id="tabs" role="group" aria-label="Quest status">
+              <button type="button" data-tab="available" aria-pressed="true">
+                Available
+              </button>
+              <button type="button" data-tab="locked" aria-pressed="false">Locked</button>
+              <button type="button" data-tab="completed" aria-pressed="false">
+                Completed
+              </button>
+              <button type="button" data-tab="all" aria-pressed="false">All</button>
+            </div>
+            <div class="filter-row">
+              <select id="trader-filter" aria-label="Trader">
+                <option value="">All traders</option>
+              </select>
+              <select id="map-filter" aria-label="Map">
+                <option value="">All maps</option>
+              </select>
+              <div class="chips" id="flag-filters" role="group" aria-label="Required for">
+                <button type="button" class="chip" data-flag="kappa" aria-pressed="false">
+                  Kappa
+                </button>
+                <button
+                  type="button"
+                  class="chip"
+                  data-flag="lightkeeper"
+                  aria-pressed="false"
+                >
+                  Lightkeeper
+                </button>
+              </div>
+              <button type="button" class="text-btn" id="clear-filters" hidden>
+                Clear filters
+              </button>
+            </div>
+          </div>
+          <div id="quest-list" class="quest-list" tabindex="-1"></div>
+        </section>
+
+        <aside class="detail panel" id="detail" aria-label="Quest details"></aside>
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-tools">
+          <button type="button" class="btn" id="export-btn">Export progress</button>
+          <button type="button" class="btn" id="import-btn">Import progress</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden />
+          <button type="button" class="btn btn-danger" id="reset-btn">
+            Reset progress
+          </button>
+          <button type="button" class="btn" id="crt-toggle" aria-pressed="true">
+            CRT effect: on
+          </button>
+        </div>
+        <p class="fineprint">
+          Progress is saved in this browser only — export it to move to another device.
+          Quest and price data come from
+          <a href="https://tarkov.dev" target="_blank" rel="noopener">tarkov.dev</a>, a
+          community project. EFTracking is a fan site and is not affiliated with
+          Battlestate Games.
+        </p>
+      </footer>
     </div>
-    <noscript>
-      <div class="nojs">EFTRACKER requires JavaScript to load the quest list.</div>
-    </noscript>
-    <script type="module" src="./src/main.js"></script>
+
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <span id="toast-text"></span>
+      <button type="button" class="text-btn" id="toast-action" hidden></button>
+    </div>
+    <noscript
+      ><p class="noscript">
+        EFTracking needs JavaScript to load the quest list.
+      </p></noscript
+    >
   </body>
 </html>

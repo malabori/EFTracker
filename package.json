@@ -1,26 +1,24 @@
 {
-  "name": "eftracker",
-  "version": "1.0.0",
+  "name": "eftracking",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
+  "description": "Escape from Tarkov quest tracker and flea price lookup. Static site, no build step.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check && npm test",
+    "snapshot": "node scripts/update-snapshot.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "autoprefixer": "^10.4.19",
-    "cssnano": "^6.1.2",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
-    "postcss": "^8.4.38",
     "prettier": "^3.8.3",
     "vite": "^5.3.4",
     "vitest": "^2.0.0"
