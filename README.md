@@ -3,14 +3,20 @@
 Escape from Tarkov quest tracker and flea price lookup — the site behind
 [eftracking.com](https://eftracking.com).
 
-- **Quest Board** (`index.html`): every quest grouped by trader in unlock order,
+- **Quests** (`index.html`): every quest grouped by trader in unlock order,
   split into _Available_, _Locked_ and _Completed_. Set your game mode, faction and
   level and the board shows what you can actually take right now, why the rest is
   locked, and your Kappa and Lightkeeper progress. Tick off quests or individual
-  objectives; filter by trader, map, Kappa or Lightkeeper; search names, objectives,
-  items and maps.
-- **Flea Prices** (`flea.html`): lowest flea listing, 24-hour average and range,
+  objectives; filter by trader (the portrait strip), map, Kappa or Lightkeeper;
+  search names, objectives, items and maps.
+- **Flea market** (`flea.html`): lowest flea listing, 24-hour average and range,
   best trader offer, where to sell, and value per inventory slot — for PvP or PvE.
+
+Behind both pages runs an ASCII backdrop: drifting dust, and scenes from the
+game (Lighthouse, Killa, Kappa, the BTR, cultists, Tagilla, ULTRA, and the
+"Head, Eyes" death screen) that materialise, linger and dissolve. The footer
+switch sets it to Animated, Still or Off; visitors who ask their system for
+reduced motion get Still.
 
 All data comes live from [tarkov.dev](https://tarkov.dev)'s free community API.
 There is no account and no server: progress is saved in the visitor's browser
@@ -26,7 +32,8 @@ CSS preprocessors); the browser loads `src/` directly.
 ```
 index.html, flea.html   the two pages (static markup)
 src/shared/             used by both pages: API client, settings, storage,
-                        raid clock, formatting, header/footer behaviour
+                        raid clock, formatting, header/footer behaviour,
+                        backdrop.js + ascii-art.js (the ASCII background)
 src/quests/             quest board: data.js (fetch/cache), model.js (pure
                         quest logic), progress.js (saving + migration),
                         view.js (HTML), main.js (wiring)
@@ -77,6 +84,15 @@ npm run check    # lint + formatting + unit tests (what CI runs)
 npm run snapshot # refresh data/snapshot-*.json from tarkov.dev (needs internet)
 ```
 
+## The ASCII backdrop
+
+Scenes live in `src/shared/ascii-art.js`: plain text art plus a caption, a glow
+colour and the boxes of characters that glow. To add one, append an entry there
+(the unit tests check that every glow box lands on the drawing). The motion is
+done by the browser's compositor (Web Animations), so script only runs while a
+scene fades in or out; keep it that way so the page stays light on laptops and
+phones.
+
 ## Data and correctness notes
 
 - Quests come from `tasks(gameMode: regular | pve)`. Faction-specific quests use
@@ -98,7 +114,7 @@ npm run snapshot # refresh data/snapshot-*.json from tarkov.dev (needs internet)
 | key                          | contents                                               |
 | ---------------------------- | ------------------------------------------------------ |
 | `eftracking.progress.v1`     | completed quests and ticked objectives, per game mode  |
-| `eftracking.settings.v1`     | mode, faction, level, CRT effect                       |
+| `eftracking.settings.v1`     | mode, faction, level, background (animated/still/off)  |
 | `eftracking.ui.v1`           | quest board filters, collapsed traders, selected quest |
 | `eftracking.flea.v1`         | last flea search and sort                              |
 | `eftracking.tasks.v1.<mode>` | cached quest data (refreshed after 6 hours)            |

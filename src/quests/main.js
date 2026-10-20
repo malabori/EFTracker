@@ -7,7 +7,7 @@ import {
   MAX_LEVEL
 } from '../shared/settings.js';
 import { readJson, writeJson } from '../shared/storage.js';
-import { setupCrtToggle, startRaidClocks } from '../shared/chrome.js';
+import { setupBackdrop, startRaidClocks } from '../shared/chrome.js';
 import { shortDate, timeAgo } from '../shared/format.js';
 import {
   TABS,
@@ -40,7 +40,9 @@ import {
   listHtml,
   skeletonHtml,
   summaryHtml,
-  tabLabel
+  tabLabel,
+  traderProgressLabel,
+  traderStripHtml
 } from './view.js';
 
 const UI_KEY = 'eftracking.ui.v1';
@@ -88,7 +90,7 @@ const el = {
   summary: $('#summary'),
   search: $('#search'),
   tabs: $('#tabs'),
-  trader: $('#trader-filter'),
+  traders: $('#trader-strip'),
   map: $('#map-filter'),
   flags: $('#flag-filters'),
   clear: $('#clear-filters'),
@@ -103,6 +105,7 @@ const el = {
 };
 
 const narrowScreen = matchMedia('(max-width: 900px)');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const bucket = () => modeBucket(state.progress, state.settings.mode);
 const saveUi = () => writeJson(UI_KEY, state.ui);
 const persistProgress = () => saveProgress(state.progress);
@@ -250,25 +253,54 @@ function renderSummary() {
     : '<div class="stat is-loading"></div>'.repeat(4);
 }
 
+// The trader strip and map list only change when new data arrives.
 let optionsFor = null;
 function renderFilterOptions() {
   if (optionsFor === state.catalog) return;
   optionsFor = state.catalog;
+  el.traders.innerHTML = traderStripHtml(state.catalog.traders, viewContext());
   const option = (value, label) => {
     const o = document.createElement('option');
     o.value = value;
     o.textContent = label;
     return o;
   };
-  el.trader.replaceChildren(
-    option('', 'All traders'),
-    ...state.catalog.traders.map(t => option(t, t))
-  );
   el.map.replaceChildren(
     option('', 'All maps'),
     ...state.catalog.maps.map(m => option(m, m))
   );
   el.map.hidden = state.catalog.maps.length === 0;
+  renderTraderStrip();
+  // Bring a trader picked on an earlier visit into view.
+  const active = el.traders.querySelector('[aria-pressed="true"]');
+  if (active) {
+    el.traders.scrollLeft =
+      active.offsetLeft - (el.traders.clientWidth - active.offsetWidth) / 2;
+  }
+  updateStripEdges();
+}
+
+// Show the fade and arrow on whichever side has more traders out of view.
+function updateStripEdges() {
+  const s = el.traders;
+  s.parentElement.classList.toggle('more-left', s.scrollLeft > 4);
+  s.parentElement.classList.toggle(
+    'more-right',
+    s.scrollLeft + s.clientWidth < s.scrollWidth - 4
+  );
+}
+
+function renderTraderStrip() {
+  for (const btn of el.traders.children) {
+    const { trader } = btn.dataset;
+    const progress = trader
+      ? state.summary.traders.get(trader) || { done: 0, total: 0 }
+      : state.summary.all;
+    btn.setAttribute('aria-pressed', String(trader === state.ui.trader));
+    btn.title = traderProgressLabel(trader, progress);
+    btn.querySelector('.meter > span').style.width =
+      `${progress.total ? (progress.done / progress.total) * 100 : 0}%`;
+  }
 }
 
 function renderFilters(counts) {
@@ -276,7 +308,7 @@ function renderFilters(counts) {
     btn.innerHTML = tabLabel(btn.dataset.tab, counts[btn.dataset.tab] || 0);
     btn.setAttribute('aria-pressed', String(btn.dataset.tab === state.ui.tab));
   }
-  el.trader.value = state.ui.trader;
+  renderTraderStrip();
   el.map.value = state.ui.map;
   for (const btn of el.flags.querySelectorAll('button')) {
     btn.setAttribute('aria-pressed', String(Boolean(state.ui[btn.dataset.flag])));
@@ -664,7 +696,23 @@ function bindEvents() {
     const tab = e.target.closest('button')?.dataset.tab;
     if (tab) setFilter({ tab });
   });
-  el.trader.addEventListener('change', () => setFilter({ trader: el.trader.value }));
+  el.traders.addEventListener('scroll', updateStripEdges, { passive: true });
+  new ResizeObserver(updateStripEdges).observe(el.traders);
+  for (const arrow of el.traders.parentElement.querySelectorAll('[data-scroll]')) {
+    arrow.addEventListener('click', () =>
+      el.traders.scrollBy({
+        left: Number(arrow.dataset.scroll) * el.traders.clientWidth * 0.75,
+        behavior: reducedMotion.matches ? 'auto' : 'smooth'
+      })
+    );
+  }
+  el.traders.addEventListener('click', e => {
+    const btn = e.target.closest('[data-trader]');
+    if (!btn) return;
+    // Picking the trader that's already shown goes back to all traders.
+    const { trader } = btn.dataset;
+    setFilter({ trader: trader === state.ui.trader ? '' : trader });
+  });
   el.map.addEventListener('change', () => setFilter({ map: el.map.value }));
   el.flags.addEventListener('click', e => {
     const flag = e.target.closest('button')?.dataset.flag;
@@ -739,6 +787,7 @@ function bindEvents() {
 
 bindEvents();
 startRaidClocks();
-setupCrtToggle($('#crt-toggle'));
 renderAll();
 loadData();
+// The quests come first; the backdrop is only decoration.
+setupBackdrop($('#backdrop'), $('#backdrop-toggle'));

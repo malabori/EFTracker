@@ -1,16 +1,18 @@
 import { readJson, writeJson } from './storage.js';
 
-// Settings shared by every page: game mode, faction, player level, CRT effect.
+// Settings shared by every page: game mode, faction, player level and how the
+// ASCII backdrop behaves.
 export const SETTINGS_KEY = 'eftracking.settings.v1';
 export const MODE_LABELS = { regular: 'PvP', pve: 'PvE' };
 export const FACTIONS = ['BEAR', 'USEC'];
+export const BACKDROP_MODES = ['animated', 'still', 'off'];
 export const MAX_LEVEL = 99;
 
 const DEFAULTS = Object.freeze({
   mode: 'regular',
   faction: null,
   level: null,
-  crt: true
+  backdrop: 'animated'
 });
 
 export function normalizeSettings(raw) {
@@ -22,7 +24,7 @@ export function normalizeSettings(raw) {
   if (raw.level != null && raw.level !== '' && Number.isInteger(level)) {
     out.level = Math.min(MAX_LEVEL, Math.max(1, level));
   }
-  if (typeof raw.crt === 'boolean') out.crt = raw.crt;
+  if (BACKDROP_MODES.includes(raw.backdrop)) out.backdrop = raw.backdrop;
   return out;
 }
 

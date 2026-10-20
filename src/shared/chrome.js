@@ -1,7 +1,8 @@
-// Behaviour shared by every page's header and footer: the raid clocks and
-// the CRT-effect toggle.
+// Behaviour shared by every page's header and footer: the raid clocks and the
+// ASCII backdrop with its Animated / Still / Off switch.
 import { raidTime, formatClock, isDaytime } from './clock.js';
-import { getSettings, updateSettings } from './settings.js';
+import { BACKDROP_MODES, getSettings, updateSettings } from './settings.js';
+import { startBackdrop } from './backdrop.js';
 
 export function startRaidClocks(root = document) {
   const clocks = [...root.querySelectorAll('[data-raid-clock]')];
@@ -12,7 +13,7 @@ export function startRaidClocks(root = document) {
     for (const el of clocks) {
       const time = raidTime(now, el.dataset.raidClock);
       const day = isDaytime(time);
-      el.querySelector('[data-time]').textContent = formatClock(time);
+      el.querySelector('[data-time]').textContent = formatClock(time).slice(0, 5);
       el.dataset.phase = day ? 'day' : 'night';
       el.querySelector('[data-phase-label]').textContent = day ? 'Day' : 'Night';
     }
@@ -34,15 +35,21 @@ export function startRaidClocks(root = document) {
   start();
 }
 
-export function setupCrtToggle(button) {
+const BACKDROP_LABELS = { animated: 'Animated', still: 'Still', off: 'Off' };
+
+export function setupBackdrop(root, button) {
+  if (!root) return;
+  const backdrop = startBackdrop(root, getSettings().backdrop);
   if (!button) return;
-  const apply = on => {
-    document.documentElement.classList.toggle('no-crt', !on);
-    button.setAttribute('aria-pressed', String(on));
-    button.textContent = on ? 'CRT effect: on' : 'CRT effect: off';
+  const label = mode => {
+    button.textContent = `Background: ${BACKDROP_LABELS[mode]}`;
   };
-  apply(getSettings().crt);
-  button.addEventListener('click', () =>
-    apply(updateSettings({ crt: !getSettings().crt }).crt)
-  );
+  label(getSettings().backdrop);
+  button.addEventListener('click', () => {
+    const modes = BACKDROP_MODES;
+    const next = modes[(modes.indexOf(getSettings().backdrop) + 1) % modes.length];
+    updateSettings({ backdrop: next });
+    backdrop.setMode(next);
+    label(next);
+  });
 }

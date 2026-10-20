@@ -127,13 +127,37 @@ function rowHtml(task, ctx) {
   </li>`;
 }
 
-function portraitHtml(trader, ctx) {
+// The trader's initial sits under the portrait, so a missing image still reads.
+function avatarHtml(trader, ctx) {
   const img = ctx.traderImages.get(trader);
-  return `<span class="portrait" aria-hidden="true"><span>${esc(trader.charAt(0))}</span>${
+  return `<span class="avatar" aria-hidden="true">${esc(trader.charAt(0))}${
     img
-      ? `<img src="${esc(img)}" alt="" width="36" height="36" loading="lazy" decoding="async" onerror="this.remove()">`
+      ? `<img src="${esc(img)}" alt="" width="46" height="46" loading="lazy" decoding="async" onerror="this.remove()">`
       : ''
   }</span>`;
+}
+
+const ALL_ICON =
+  '<svg width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="2" width="7" height="7" rx="2"/><rect x="11" y="2" width="7" height="7" rx="2"/><rect x="2" y="11" width="7" height="7" rx="2"/><rect x="11" y="11" width="7" height="7" rx="2"/></svg>';
+
+// One portrait per trader, like the traders screen in-game. Built once per
+// data load; main.js keeps the pressed state and progress bars current, so
+// the portraits aren't re-created on every click.
+export function traderStripHtml(traders, ctx) {
+  const button = (value, avatar, name) =>
+    `<button type="button" class="trader-btn" data-trader="${esc(value)}" aria-pressed="false">${avatar}<span class="trader-name">${esc(name)}</span><span class="meter" aria-hidden="true"><span></span></span></button>`;
+  return [
+    button(
+      '',
+      `<span class="avatar avatar-all" aria-hidden="true">${ALL_ICON}</span>`,
+      'All'
+    ),
+    ...traders.map(t => button(t, avatarHtml(t, ctx), t))
+  ].join('');
+}
+
+export function traderProgressLabel(trader, { done, total }) {
+  return `${trader || 'All traders'}: ${count(done)} of ${count(total)} quests done`;
 }
 
 export function listHtml(groups, ctx) {
@@ -144,7 +168,7 @@ export function listHtml(groups, ctx) {
       return `<section class="trader-group">
         <h3 class="group-head">
           <button type="button" class="group-toggle" data-action="collapse" data-trader="${esc(group.trader)}" aria-expanded="${!collapsed}">
-            ${portraitHtml(group.trader, ctx)}
+            ${avatarHtml(group.trader, ctx)}
             <span class="group-name">${esc(group.trader)}</span>
             <span class="group-meta">${count(totals.done)} / ${count(totals.total)} done</span>
             <span class="group-shown">${count(group.tasks.length)} shown</span>
