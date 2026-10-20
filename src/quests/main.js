@@ -98,7 +98,8 @@ const el = {
   toast: $('#toast'),
   toastText: $('#toast-text'),
   toastAction: $('#toast-action'),
-  importFile: $('#import-file')
+  importFile: $('#import-file'),
+  reset: $('#reset-btn')
 };
 
 const narrowScreen = matchMedia('(max-width: 900px)');
@@ -485,13 +486,63 @@ async function importProgress(file) {
   }
 }
 
+// Two clicks to reset (no confirm() dialog, which browsers may block inside the
+// frame on eftracking.com), and an Undo afterwards.
+let resetTimer = null;
+function disarmReset() {
+  clearTimeout(resetTimer);
+  resetTimer = null;
+  el.reset.textContent = 'Reset progress';
+  el.reset.classList.remove('is-armed');
+}
+
 function resetProgress() {
-  const mode = MODE_LABELS[state.settings.mode];
-  if (!confirm(`Reset all ${mode} quest progress in this browser? This can’t be undone.`))
+  const mode = state.settings.mode;
+  if (!resetTimer) {
+    el.reset.textContent = `Click again to erase ${MODE_LABELS[mode]} progress`;
+    el.reset.classList.add('is-armed');
+    resetTimer = setTimeout(disarmReset, 5000);
     return;
-  delete state.progress.modes[state.settings.mode];
+  }
+  disarmReset();
+  const before = state.progress.modes[mode];
+  delete state.progress.modes[mode];
   afterProgressChange();
-  showToast(`${mode} progress reset.`);
+  showToast(`${MODE_LABELS[mode]} progress reset.`, {
+    label: 'Undo',
+    run: () => {
+      if (before) state.progress.modes[mode] = before;
+      afterProgressChange();
+    }
+  });
+}
+
+// eftracking.com (WordPress) shows this page in a frame and passes along the
+// progress its old version saved on that domain (see src/main.js). It's
+// accepted from eftracking.com only, and only the first time.
+const EMBED_HOSTS = ['eftracking.com', 'www.eftracking.com'];
+const LOCAL_DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
+function takeLegacyHandoff(e) {
+  if (e.source !== window.parent || e.data?.type !== 'eftracking:legacy-progress') return;
+  let host = '';
+  try {
+    host = new URL(e.origin).hostname;
+  } catch {}
+  const trusted =
+    (e.origin.startsWith('https://') && EMBED_HOSTS.includes(host)) || LOCAL_DEV;
+  if (!trusted || state.progress.legacyHandoff) return;
+  state.progress.legacyHandoff = true;
+  let added = 0;
+  try {
+    added = mergeProgress(state.progress, parseImport(JSON.parse(e.data.data)));
+  } catch {}
+  afterProgressChange();
+  if (added) {
+    showToast(
+      `Brought over ${added} completed quest${added === 1 ? '' : 's'} from the old site.`
+    );
+  }
 }
 
 // ---------------------------------------------------------------- data
@@ -661,7 +712,8 @@ function bindEvents() {
     el.importFile.value = '';
     if (file) importProgress(file);
   });
-  $('#reset-btn').addEventListener('click', resetProgress);
+  el.reset.addEventListener('click', resetProgress);
+  window.addEventListener('message', takeLegacyHandoff);
 
   document.addEventListener('keydown', e => {
     const typing = e.target.closest?.(

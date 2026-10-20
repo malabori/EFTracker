@@ -6,6 +6,7 @@ import {
   isObjectiveChecked,
   mergeProgress,
   migrateLegacy,
+  normalizeProgress,
   parseImport,
   setObjectiveDone,
   setQuestDone
@@ -108,6 +109,26 @@ describe('objective tracking', () => {
     setQuestDone(b, quest, false);
     expect(isObjectiveChecked(b, quest, quest.objectives[0])).toBe(true);
     expect(isObjectiveChecked(b, quest, quest.objectives[1])).toBe(false);
+  });
+});
+
+describe('normalizeProgress', () => {
+  it('remembers that the eftracking.com handoff already happened', () => {
+    expect(normalizeProgress({ modes: {}, legacyHandoff: true }).legacyHandoff).toBe(
+      true
+    );
+    expect(normalizeProgress({ modes: {} }).legacyHandoff).toBeUndefined();
+  });
+
+  it('drops junk flags and unknown fields', () => {
+    const out = normalizeProgress({
+      modes: { regular: { tasks: { a: true, b: 'yes', '': true }, objectives: null } },
+      extra: 1
+    });
+    expect(out).toEqual({
+      version: 1,
+      modes: { regular: { tasks: { a: true }, objectives: {} } }
+    });
   });
 });
 

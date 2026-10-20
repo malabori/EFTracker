@@ -318,6 +318,11 @@ mark {
   border-color: #9a5f56;
   color: #f2c1b6;
 }
+.btn-danger.is-armed {
+  border-color: var(--danger);
+  color: #1a0f0d;
+  background: var(--danger);
+}
 
 .text-btn {
   padding: 0;

@@ -1,0 +1,24 @@
+/* Legacy stylesheet URL — keep this file at this path.
+   eftracking.com's WordPress page links to it (and loads src/main.js). It
+   only styles the full-window frame that src/main.js puts on that page. */
+
+html,
+body {
+  margin: 0;
+  background: #0d1118 !important;
+}
+
+html.eftracking-embedded,
+html.eftracking-embedded body {
+  overflow: hidden;
+}
+
+.eftracking-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #0d1118;
+}
