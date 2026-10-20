@@ -32,6 +32,8 @@ src/quests/             quest board: data.js (fetch/cache), model.js (pure
                         view.js (HTML), main.js (wiring)
 src/flea/               flea page: data.js, model.js, main.js
 src/styles/             theme.css (shared look), quests.css, flea.css
+src/main.js,            legacy addresses the eftracking.com WordPress page loads;
+src/styles/main.css     they frame the site (see Deploying)
 data/                   offline quest snapshot, used only if tarkov.dev is down
 scripts/                update-snapshot.mjs (refreshes data/)
 tests/                  unit tests for the pure logic
@@ -39,14 +41,19 @@ tests/                  unit tests for the pure logic
 
 ## Deploying
 
-GitHub Pages publishes the site straight from a branch: whatever is on that branch
-is live about a minute after it changes. Check which branch under
-**Settings → Pages → Build and deployment → Branch** — as of October 2026 it was
-set to `clean`, so changes merged into `main` don't appear on the site until Pages
-publishes `main` (or `main` is merged into `clean`).
+Two pieces:
 
-When switching the branch, confirm the **Custom domain** box on the same page
-still says `eftracking.com`.
+1. **GitHub Pages** publishes the `clean` branch to
+   <https://malabori.github.io/EFTracker/> about a minute after it changes
+   (**Settings → Pages**). `main` is kept identical to `clean`.
+2. **eftracking.com** is a WordPress page that loads `src/main.js` and
+   `src/styles/main.css` from that GitHub address. Those two small files just show
+   the GitHub site in a full-window frame, so the WordPress page always shows the
+   latest version and never needs editing. **Don't move, rename or delete them.**
+
+Because the site runs in a frame on a different domain, progress the very old
+version saved on eftracking.com itself is passed into the frame once (see
+`src/main.js` and `takeLegacyHandoff` in `src/quests/main.js`).
 
 ## Working on it
 

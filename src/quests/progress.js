@@ -31,7 +31,10 @@ export function normalizeProgress(raw) {
   const modes = {};
   for (const [mode, b] of Object.entries(raw?.modes || {}))
     modes[mode] = normalizeBucket(b);
-  return { version: 1, modes };
+  const out = { version: 1, modes };
+  // Set once eftracking.com has handed over the old site's progress.
+  if (raw?.legacyHandoff === true) out.legacyHandoff = true;
+  return out;
 }
 
 export function modeBucket(progress, mode) {
